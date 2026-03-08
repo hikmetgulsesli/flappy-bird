@@ -22,10 +22,9 @@ module.exports = [
         cancelAnimationFrame: 'readonly',
         localStorage: 'readonly',
         HTMLCanvasElement: 'readonly',
-        CanvasRenderingContext2D: 'readonly',
         KeyboardEvent: 'readonly',
-        Math: 'readonly',
-        Date: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        getComputedStyle: 'readonly',
       },
     },
     plugins: {
