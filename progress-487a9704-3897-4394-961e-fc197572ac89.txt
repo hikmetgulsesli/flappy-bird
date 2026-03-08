@@ -1,0 +1,24 @@
+
+=== US-003: Canvas game engine core ===
+COMPLETED: 2026-03-09T02:18:00+03:00
+FILES CHANGED:
+- src/components/GameCanvas.tsx (new - core canvas game engine component)
+- src/components/GameCanvas.test.tsx (new - 19 comprehensive tests)
+- src/components/index.ts (new - component exports)
+- src/App.tsx (refactored to use GameCanvas)
+- src/test/setup.ts (new - test setup with canvas mocks)
+- vitest.config.ts (new - vitest configuration)
+- eslint.config.cjs (added CanvasRenderingContext2D global)
+- package.json (updated test script to use vitest)
+
+KEY DECISIONS:
+- Created dedicated GameCanvas component for reusable canvas game engine
+- Canvas dimensions set to 288x512px (classic Flappy Bird ratio)
+- Used requestAnimationFrame for 60fps game loop
+- Implemented proper cleanup with cancelAnimationFrame on unmount
+- Separated game logic (update) from rendering (render) via callbacks
+- Used TypeScript interfaces for full type safety
+- Added isRunning prop for game state control
+- Refactored App.tsx to use the new GameCanvas component
+
+DEPENDENCIES ADDED: None (used existing devDependencies)
