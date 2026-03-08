@@ -4,13 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Pixel art rendering for crisp edges - uses design token */
-canvas {
-  image-rendering: var(--image-rendering);
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
-
 /* Custom scrollbar for retro feel */
 ::-webkit-scrollbar {
   width: 12px;

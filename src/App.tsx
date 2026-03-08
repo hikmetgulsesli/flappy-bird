@@ -11,43 +11,6 @@ const JUMP_STRENGTH = -7
 const PIPE_SPEED = 2.5
 const DEATH_ANIMATION_DURATION = 800
 
-// Get colors from CSS variables (with fallbacks)
-function getCSSVar(name: string, fallback: string): string {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return fallback
-  try {
-    return window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-  } catch {
-    return fallback
-  }
-}
-
-// Color palette using CSS custom properties with fallbacks
-const getColors = () => ({
-  sky: getCSSVar('--color-sky-cyan', '#4EC0CA'),
-  skyGradient: getCSSVar('--color-sky-gradient', '#70c5ce'),
-  skyLight: getCSSVar('--color-sky-light', '#a8e6cf'),
-  bird: getCSSVar('--color-bird-yellow', '#F4D03F'),
-  birdDark: getCSSVar('--color-bird-dark', '#d4ac0d'),
-  birdEye: getCSSVar('--color-bird-eye', '#ffffff'),
-  birdPupil: getCSSVar('--color-bird-pupil', '#000000'),
-  birdBeak: getCSSVar('--color-bird-beak', '#E67E22'),
-  pipe: getCSSVar('--color-pipe-green', '#73BF2E'),
-  pipeLight: getCSSVar('--color-pipe-light', '#a0de6e'),
-  pipeDark: getCSSVar('--color-pipe-dark', '#5a9a1e'),
-  pipeBorder: getCSSVar('--color-pipe-border', '#2d5016'),
-  pipeGreenDark: getCSSVar('--color-pipe-green-dark', '#558B2F'),
-  ground: getCSSVar('--color-sand-ground', '#DED895'),
-  groundDark: getCSSVar('--color-sand-dark', '#d4c76a'),
-  groundBorder: getCSSVar('--color-ground-border', '#5a7d2a'),
-  textPrimary: getCSSVar('--color-text-primary', '#ffffff'),
-  textDark: getCSSVar('--color-text-dark', '#000000'),
-  gold: getCSSVar('--color-gold', '#ffd700'),
-  particle1: getCSSVar('--color-particle-1', '#ff6b6b'),
-  particle2: getCSSVar('--color-particle-2', '#F4D03F'),
-  particle3: getCSSVar('--color-particle-3', '#E67E22'),
-  particle4: getCSSVar('--color-particle-4', '#d4ac0d'),
-})
-
 interface Particle {
   x: number
   y: number
@@ -77,9 +40,26 @@ interface GameState {
   particles: Particle[]
 }
 
-function createExplosion(x: number, y: number, colors: Record<string, string>): Particle[] {
+// Pixel-art colors
+const COLORS = {
+  sky: '#70c5ce',
+  skyGradient: '#a8e6cf',
+  bird: '#f4d03f',
+  birdDark: '#d4ac0d',
+  birdEye: '#fff',
+  birdPupil: '#000',
+  birdBeak: '#e67e22',
+  pipe: '#73bf2e',
+  pipeLight: '#a0de6e',
+  pipeDark: '#5a9a1e',
+  pipeBorder: '#2d5016',
+  ground: '#ded895',
+  groundDark: '#d4c76a',
+}
+
+function createExplosion(x: number, y: number): Particle[] {
   const particles: Particle[] = []
-  const particleColors = [colors.bird, colors.birdDark, colors.birdBeak, colors.particle1]
+  const colors = [COLORS.bird, COLORS.birdDark, COLORS.birdBeak, '#ff6b6b']
   for (let i = 0; i < 12; i++) {
     const angle = (Math.PI * 2 * i) / 12
     const speed = 2 + Math.random() * 3
@@ -90,7 +70,7 @@ function createExplosion(x: number, y: number, colors: Record<string, string>): 
       vy: Math.sin(angle) * speed,
       life: DEATH_ANIMATION_DURATION,
       maxLife: DEATH_ANIMATION_DURATION,
-      color: particleColors[Math.floor(Math.random() * particleColors.length)],
+      color: colors[Math.floor(Math.random() * colors.length)],
     })
   }
   return particles
@@ -139,8 +119,6 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
   const lastTimeRef = useRef<number>(0)
-  const colorsRef = useRef(getColors())
-  
   const [state, setState] = useState<GameState>(() => {
     const saved = localStorage.getItem('flappyHighScore')
     return {
@@ -156,11 +134,6 @@ function App() {
       particles: [],
     }
   })
-
-  // Update colors when component mounts (for SSR compatibility)
-  useEffect(() => {
-    colorsRef.current = getColors()
-  }, [])
 
   const resetGame = useCallback(() => {
     setState(prev => ({
@@ -201,7 +174,6 @@ function App() {
     if (!ctx) return
 
     let frameCount = 0
-    const colors = colorsRef.current
 
     const gameLoop = (timestamp: number) => {
       const deltaTime = lastTimeRef.current ? timestamp - lastTimeRef.current : 16
@@ -277,13 +249,13 @@ function App() {
               if (birdTop < pipe.topHeight) {
                 newState.gameOver = true
                 newState.deathTime = Date.now()
-                newState.particles = createExplosion(GAME_WIDTH / 2, newState.birdY, colors)
+                newState.particles = createExplosion(GAME_WIDTH / 2, newState.birdY)
               }
               // Check vertical collision with bottom pipe
               if (birdBottom > pipe.topHeight + PIPE_GAP) {
                 newState.gameOver = true
                 newState.deathTime = Date.now()
-                newState.particles = createExplosion(GAME_WIDTH / 2, newState.birdY, colors)
+                newState.particles = createExplosion(GAME_WIDTH / 2, newState.birdY)
               }
             }
           }
@@ -292,7 +264,7 @@ function App() {
           if (newState.birdY < BIRD_SIZE / 2 || newState.birdY > GAME_HEIGHT - BIRD_SIZE / 2 - 50) {
             newState.gameOver = true
             newState.deathTime = Date.now()
-            newState.particles = createExplosion(GAME_WIDTH / 2, Math.max(BIRD_SIZE, Math.min(newState.birdY, GAME_HEIGHT - 50 - BIRD_SIZE)), colors)
+            newState.particles = createExplosion(GAME_WIDTH / 2, Math.max(BIRD_SIZE, Math.min(newState.birdY, GAME_HEIGHT - 50 - BIRD_SIZE)))
           }
         }
 
@@ -319,64 +291,62 @@ function App() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const colors = colorsRef.current
-
     // Disable smoothing for pixel art look
     ctx.imageSmoothingEnabled = false
 
     // Draw sky gradient
     const gradient = ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT)
-    gradient.addColorStop(0, colors.sky)
-    gradient.addColorStop(1, colors.skyLight)
+    gradient.addColorStop(0, COLORS.sky)
+    gradient.addColorStop(1, COLORS.skyGradient)
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
     // Draw ground
     const groundY = GAME_HEIGHT - 50
-    ctx.fillStyle = colors.ground
+    ctx.fillStyle = COLORS.ground
     ctx.fillRect(0, groundY, GAME_WIDTH, 50)
     // Ground stripes
-    ctx.fillStyle = colors.groundDark
+    ctx.fillStyle = COLORS.groundDark
     for (let i = 0; i < GAME_WIDTH; i += 40) {
       ctx.fillRect(i, groundY, 20, 50)
     }
     // Ground top border
-    ctx.fillStyle = colors.groundBorder
+    ctx.fillStyle = '#5a7d2a'
     ctx.fillRect(0, groundY - 8, GAME_WIDTH, 8)
 
     // Draw pipes
     for (const pipe of state.pipes) {
       // Pipe shadow/border
-      drawPixelRect(ctx, pipe.x + 4, 0, PIPE_WIDTH, pipe.topHeight, colors.pipeBorder, 4)
-      drawPixelRect(ctx, pipe.x + 4, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, colors.pipeBorder, 4)
+      drawPixelRect(ctx, pipe.x + 4, 0, PIPE_WIDTH, pipe.topHeight, COLORS.pipeBorder, 4)
+      drawPixelRect(ctx, pipe.x + 4, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, COLORS.pipeBorder, 4)
 
       // Top pipe
-      drawPixelRect(ctx, pipe.x, 0, PIPE_WIDTH, pipe.topHeight, colors.pipe, 4)
+      drawPixelRect(ctx, pipe.x, 0, PIPE_WIDTH, pipe.topHeight, COLORS.pipe, 4)
       // Top pipe highlight
-      drawPixelRect(ctx, pipe.x, 0, 8, pipe.topHeight, colors.pipeLight, 4)
+      drawPixelRect(ctx, pipe.x, 0, 8, pipe.topHeight, COLORS.pipeLight, 4)
       // Top pipe shadow
-      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 8, 0, 8, pipe.topHeight, colors.pipeDark, 4)
+      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 8, 0, 8, pipe.topHeight, COLORS.pipeDark, 4)
 
       // Bottom pipe
-      drawPixelRect(ctx, pipe.x, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, colors.pipe, 4)
+      drawPixelRect(ctx, pipe.x, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, COLORS.pipe, 4)
       // Bottom pipe highlight
-      drawPixelRect(ctx, pipe.x, pipe.topHeight + PIPE_GAP, 8, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, colors.pipeLight, 4)
+      drawPixelRect(ctx, pipe.x, pipe.topHeight + PIPE_GAP, 8, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, COLORS.pipeLight, 4)
       // Bottom pipe shadow
-      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 8, pipe.topHeight + PIPE_GAP, 8, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, colors.pipeDark, 4)
+      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 8, pipe.topHeight + PIPE_GAP, 8, GAME_HEIGHT - pipe.topHeight - PIPE_GAP, COLORS.pipeDark, 4)
 
       // Pipe caps
       const capHeight = 24
       // Top cap
-      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight - capHeight, PIPE_WIDTH + 8, capHeight, colors.pipe, 4)
-      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight - capHeight, 8, capHeight, colors.pipeLight, 4)
-      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 4, pipe.topHeight - capHeight, 8, capHeight, colors.pipeDark, 4)
-      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight - capHeight, PIPE_WIDTH + 8, 4, colors.pipeBorder, 4)
+      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight - capHeight, PIPE_WIDTH + 8, capHeight, COLORS.pipe, 4)
+      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight - capHeight, 8, capHeight, COLORS.pipeLight, 4)
+      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 4, pipe.topHeight - capHeight, 8, capHeight, COLORS.pipeDark, 4)
+      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight - capHeight, PIPE_WIDTH + 8, 4, COLORS.pipeBorder, 4)
 
       // Bottom cap
-      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight + PIPE_GAP, PIPE_WIDTH + 8, capHeight, colors.pipe, 4)
-      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight + PIPE_GAP, 8, capHeight, colors.pipeLight, 4)
-      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 4, pipe.topHeight + PIPE_GAP, 8, capHeight, colors.pipeDark, 4)
-      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight + PIPE_GAP + capHeight - 4, PIPE_WIDTH + 8, 4, colors.pipeBorder, 4)
+      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight + PIPE_GAP, PIPE_WIDTH + 8, capHeight, COLORS.pipe, 4)
+      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight + PIPE_GAP, 8, capHeight, COLORS.pipeLight, 4)
+      drawPixelRect(ctx, pipe.x + PIPE_WIDTH - 4, pipe.topHeight + PIPE_GAP, 8, capHeight, COLORS.pipeDark, 4)
+      drawPixelRect(ctx, pipe.x - 4, pipe.topHeight + PIPE_GAP + capHeight - 4, PIPE_WIDTH + 8, 4, COLORS.pipeBorder, 4)
     }
 
     // Draw bird (if not in death animation)
@@ -387,18 +357,18 @@ function App() {
 
       // Bird body (pixelated)
       const birdOffset = -BIRD_SIZE / 2
-      drawPixelRect(ctx, birdOffset, birdOffset, BIRD_SIZE, BIRD_SIZE, colors.bird, 4)
+      drawPixelRect(ctx, birdOffset, birdOffset, BIRD_SIZE, BIRD_SIZE, COLORS.bird, 4)
       // Bird shadow
-      drawPixelRect(ctx, birdOffset + 4, birdOffset + 16, BIRD_SIZE - 4, 8, colors.birdDark, 4)
+      drawPixelRect(ctx, birdOffset + 4, birdOffset + 16, BIRD_SIZE - 4, 8, COLORS.birdDark, 4)
       // Bird wing
-      drawPixelRect(ctx, birdOffset - 4, birdOffset + 8, 12, 10, colors.birdDark, 4)
+      drawPixelRect(ctx, birdOffset - 4, birdOffset + 8, 12, 10, COLORS.birdDark, 4)
 
       // Bird eye
-      drawPixelCircle(ctx, birdOffset + 14, birdOffset + 8, 6, colors.birdEye, 4)
-      drawPixelCircle(ctx, birdOffset + 16, birdOffset + 8, 3, colors.birdPupil, 4)
+      drawPixelCircle(ctx, birdOffset + 14, birdOffset + 8, 6, COLORS.birdEye, 4)
+      drawPixelCircle(ctx, birdOffset + 16, birdOffset + 8, 3, COLORS.birdPupil, 4)
 
       // Bird beak
-      ctx.fillStyle = colors.birdBeak
+      ctx.fillStyle = COLORS.birdBeak
       ctx.beginPath()
       ctx.moveTo(birdOffset + 18, birdOffset + 10)
       ctx.lineTo(birdOffset + 28, birdOffset + 14)
@@ -417,8 +387,8 @@ function App() {
     }
 
     // Draw score
-    ctx.fillStyle = colors.textPrimary
-    ctx.strokeStyle = colors.textDark
+    ctx.fillStyle = '#fff'
+    ctx.strokeStyle = '#000'
     ctx.lineWidth = 3
     ctx.font = 'bold 32px "Courier New", monospace'
     ctx.textAlign = 'center'
@@ -434,8 +404,8 @@ function App() {
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
       if (overlayAlpha >= 0.8) {
-        ctx.fillStyle = colors.textPrimary
-        ctx.strokeStyle = colors.textDark
+        ctx.fillStyle = '#fff'
+        ctx.strokeStyle = '#000'
         ctx.lineWidth = 4
         ctx.font = 'bold 36px "Courier New", monospace'
         ctx.textAlign = 'center'
@@ -454,14 +424,14 @@ function App() {
         ctx.fillText(`BEST: ${state.highScore}`, centerX, centerY + 35)
 
         if (state.score >= state.highScore && state.score > 0) {
-          ctx.fillStyle = colors.gold
-          ctx.strokeStyle = colors.textDark
+          ctx.fillStyle = '#ffd700'
+          ctx.strokeStyle = '#000'
           ctx.font = 'bold 20px "Courier New", monospace'
           ctx.strokeText('NEW RECORD!', centerX, centerY + 70)
           ctx.fillText('NEW RECORD!', centerX, centerY + 70)
         }
 
-        ctx.fillStyle = colors.textPrimary
+        ctx.fillStyle = '#fff'
         ctx.font = '16px "Courier New", monospace'
         const canRestart = !state.deathTime || Date.now() - state.deathTime >= DEATH_ANIMATION_DURATION
         if (canRestart) {
@@ -478,8 +448,8 @@ function App() {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
-      ctx.fillStyle = colors.textPrimary
-      ctx.strokeStyle = colors.textDark
+      ctx.fillStyle = '#fff'
+      ctx.strokeStyle = '#000'
       ctx.lineWidth = 4
       ctx.font = 'bold 32px "Courier New", monospace'
       ctx.textAlign = 'center'
@@ -514,8 +484,8 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="text-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 font-retro tracking-wider"
-            style={{ textShadow: '2px 2px 0 var(--color-text-dark)' }}>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 font-mono tracking-wider"
+            style={{ textShadow: '2px 2px 0 #000' }}>
           FLAPPY BIRD
         </h1>
         <canvas
@@ -527,10 +497,11 @@ function App() {
             e.preventDefault()
             jump()
           }}
-          className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none max-w-full image-pixelated"
+          className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none max-w-full"
+          style={{ imageRendering: 'pixelated' }}
         />
-        <div className="mt-4 text-gray-300 text-sm font-retro">
-          <p>HIGH SCORE: <span className="text-retro-gold font-bold text-lg">{state.highScore}</span></p>
+        <div className="mt-4 text-gray-300 text-sm font-mono">
+          <p>HIGH SCORE: <span className="text-yellow-400 font-bold text-lg">{state.highScore}</span></p>
           <p className="mt-2 text-xs text-gray-500">CLICK, SPACE, OR TAP TO FLY</p>
         </div>
       </div>

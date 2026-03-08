@@ -89,31 +89,6 @@ describe('Design Tokens', () => {
   })
 })
 
-describe('Tailwind Configuration', () => {
-  it('should have extended colors in Tailwind config', () => {
-    // The tailwind config should be valid and have our custom colors
-    const config = {
-      theme: {
-        extend: {
-          colors: {
-            'sky-cyan': 'var(--color-sky-cyan)',
-            'bird-yellow': 'var(--color-bird-yellow)',
-            'pipe-green': 'var(--color-pipe-green)',
-            'sand-ground': 'var(--color-sand-ground)',
-            'bird-beak': 'var(--color-bird-beak)',
-          }
-        }
-      }
-    }
-    
-    expect(config.theme.extend.colors['sky-cyan']).toBe('var(--color-sky-cyan)')
-    expect(config.theme.extend.colors['bird-yellow']).toBe('var(--color-bird-yellow)')
-    expect(config.theme.extend.colors['pipe-green']).toBe('var(--color-pipe-green)')
-    expect(config.theme.extend.colors['sand-ground']).toBe('var(--color-sand-ground)')
-    expect(config.theme.extend.colors['bird-beak']).toBe('var(--color-bird-beak)')
-  })
-})
-
 describe('Canvas Rendering', () => {
   it('should apply pixelated rendering to canvas', () => {
     const canvas = document.createElement('canvas')
