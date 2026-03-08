@@ -1,6 +1,7 @@
 // Pipe system constants and utilities for Flappy Bird game
-export const GAME_WIDTH = 400
-export const GAME_HEIGHT = 600
+// Classic Flappy Bird dimensions (288x512)
+export const GAME_WIDTH = 288
+export const GAME_HEIGHT = 512
 export const PIPE_WIDTH = 52
 export const PIPE_GAP = 160
 export const PIPE_SPEED = 2
@@ -29,6 +30,7 @@ export function generatePipe(): Pipe {
 
 /**
  * Updates pipe positions and filters out off-screen pipes
+ * Pipes are removed when x <= -PIPE_WIDTH (completely off-screen)
  * @param pipes - Array of current pipes
  * @returns Updated array with moved pipes, off-screen pipes removed
  */
