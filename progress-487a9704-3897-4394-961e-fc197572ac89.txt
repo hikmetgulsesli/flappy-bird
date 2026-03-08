@@ -1,24 +1,24 @@
-
-=== US-003: Canvas game engine core ===
-COMPLETED: 2026-03-09T02:18:00+03:00
+=== US-012: Background and visual effects ===
+COMPLETED: 2026-03-09T02:24:00+03:00
 FILES CHANGED:
-- src/components/GameCanvas.tsx (new - core canvas game engine component)
-- src/components/GameCanvas.test.tsx (new - 19 comprehensive tests)
-- src/components/index.ts (new - component exports)
-- src/App.tsx (refactored to use GameCanvas)
-- src/test/setup.ts (new - test setup with canvas mocks)
+- src/App.tsx (updated - added sky background, clouds, ground with grass details, pixel-art rendering)
+- src/App.test.tsx (new - 4 unit tests for background rendering)
+- src/test/setup.ts (new - vitest test setup with canvas mocks)
 - vitest.config.ts (new - vitest configuration)
-- eslint.config.cjs (added CanvasRenderingContext2D global)
-- package.json (updated test script to use vitest)
+- package.json (updated - test script uses vitest)
+- package-lock.json (updated - added vitest, testing-library dependencies)
 
 KEY DECISIONS:
-- Created dedicated GameCanvas component for reusable canvas game engine
-- Canvas dimensions set to 288x512px (classic Flappy Bird ratio)
-- Used requestAnimationFrame for 60fps game loop
-- Implemented proper cleanup with cancelAnimationFrame on unmount
-- Separated game logic (update) from rendering (render) via callbacks
-- Used TypeScript interfaces for full type safety
-- Added isRunning prop for game state control
-- Refactored App.tsx to use the new GameCanvas component
+- Changed canvas dimensions to 288x512px to match classic Flappy Bird ratio
+- Sky height is 400px (SKY_HEIGHT), ground starts at y=400 with height 112px
+- Clouds use overlapping white circles at 30% opacity for fluffy appearance
+- Implemented parallax scrolling for clouds with varying speeds
+- Disabled canvas imageSmoothingEnabled for crisp pixel-art style
+- Added canvas style image-rendering: pixelated for CSS-level crispness
+- Ground has sand color (#DED895) with grass line (#73BF2E) and texture details
 
-DEPENDENCIES ADDED: None (used existing devDependencies)
+DEPENDENCIES ADDED:
+- vitest (v4.0.18) - test runner
+- @testing-library/react - React component testing
+- @testing-library/jest-dom - DOM assertions
+- jsdom - browser environment for tests

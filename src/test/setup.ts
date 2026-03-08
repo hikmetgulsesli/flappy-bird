@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { vi } from 'vitest'
 
 // Canvas mock for testing
 class MockCanvasContext {
@@ -23,12 +24,14 @@ class MockCanvasContext {
   strokeText = vi.fn()
 }
 
-HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
+const mockGetContext = vi.fn((contextId: string) => {
   if (contextId === '2d') {
-    return new MockCanvasContext() as unknown as CanvasRenderingContext2D
+    return new MockCanvasContext() as unknown as ReturnType<HTMLCanvasElement['getContext']>
   }
   return null
 })
+
+HTMLCanvasElement.prototype.getContext = mockGetContext as unknown as typeof HTMLCanvasElement.prototype.getContext
 
 // localStorage mock
 const localStorageMock = {
@@ -42,10 +45,10 @@ Object.defineProperty(window, 'localStorage', {
 })
 
 // requestAnimationFrame mock
-global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-  return setTimeout(callback, 16) as unknown as number
-})
+globalThis.requestAnimationFrame = vi.fn((callback: (time: number) => void) => {
+  return setTimeout(() => callback(Date.now()), 16) as unknown as number
+}) as unknown as typeof requestAnimationFrame
 
-global.cancelAnimationFrame = vi.fn((id: number) => {
+globalThis.cancelAnimationFrame = vi.fn((id: number) => {
   clearTimeout(id)
-})
+}) as unknown as typeof cancelAnimationFrame

@@ -1,28 +1,29 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import './index.css'
+import {
+  GAME_WIDTH,
+  GAME_HEIGHT,
+  PIPE_WIDTH,
+  PIPE_GAP,
+  generatePipe,
+  updatePipes,
+  shouldSpawnPipe,
+  type Pipe,
+} from './pipeSystem'
 
 // Classic Flappy Bird dimensions (288x512)
-const GAME_WIDTH = 288
-const GAME_HEIGHT = 512
 const GROUND_HEIGHT = 112
 const SKY_HEIGHT = GAME_HEIGHT - GROUND_HEIGHT // 400
 const BIRD_SIZE = 20
-const PIPE_WIDTH = 52
-const PIPE_GAP = 100
 const GRAVITY = 0.25
 const JUMP_STRENGTH = -4.5
-const PIPE_SPEED = 2
 
 // Colors
 const SKY_COLOR = '#4EC0CA'
 const GROUND_COLOR = '#DED895'
 const GRASS_COLOR = '#73BF2E'
-
-interface Pipe {
-  x: number
-  topHeight: number
-  passed: boolean
-}
+const PIPE_COLOR = '#73BF2E'
+const PIPE_CAP_COLOR = '#558B2F'
 
 interface Cloud {
   x: number
@@ -109,19 +110,14 @@ function App() {
           newState.birdVelocity += GRAVITY
           newState.birdY += newState.birdVelocity
 
-          // Generate pipes
+          // Generate pipes every 150 frames
           frameCountRef.current++
-          if (frameCountRef.current % 120 === 0) {
-            const minHeight = 50
-            const maxHeight = SKY_HEIGHT - PIPE_GAP - minHeight
-            const topHeight = Math.floor(Math.random() * (maxHeight - minHeight) + minHeight)
-            newState.pipes = [...newState.pipes, { x: GAME_WIDTH, topHeight, passed: false }]
+          if (shouldSpawnPipe(frameCountRef.current)) {
+            newState.pipes = [...newState.pipes, generatePipe()]
           }
 
-          // Move pipes
-          newState.pipes = newState.pipes
-            .map(pipe => ({ ...pipe, x: pipe.x - PIPE_SPEED }))
-            .filter(pipe => pipe.x + PIPE_WIDTH > 0)
+          // Move pipes and filter out off-screen pipes
+          newState.pipes = updatePipes(newState.pipes)
 
           // Move clouds (parallax effect)
           newState.clouds = newState.clouds.map(cloud => ({
@@ -224,18 +220,18 @@ function App() {
     }
 
     // 3. Draw pipes (behind bird)
-    ctx.fillStyle = '#73BF2E'
+    ctx.fillStyle = PIPE_COLOR
     for (const pipe of state.pipes) {
       // Top pipe
       ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight)
       // Bottom pipe
       ctx.fillRect(pipe.x, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, SKY_HEIGHT - pipe.topHeight - PIPE_GAP)
       
-      // Pipe caps (darker green)
-      ctx.fillStyle = '#558B20'
+      // Pipe caps (darker green #558B2F)
+      ctx.fillStyle = PIPE_CAP_COLOR
       ctx.fillRect(pipe.x - 2, pipe.topHeight - 16, PIPE_WIDTH + 4, 16)
       ctx.fillRect(pipe.x - 2, pipe.topHeight + PIPE_GAP, PIPE_WIDTH + 4, 16)
-      ctx.fillStyle = '#73BF2E'
+      ctx.fillStyle = PIPE_COLOR
     }
 
     // 4. Draw bird
