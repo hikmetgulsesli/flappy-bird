@@ -13,28 +13,29 @@ const JUMP_STRENGTH = -8
 const PIPE_SPEED = 3
 const CLOUD_SPEED = 0.5
 
-interface Cloud {
+export interface Cloud {
   x: number
   y: number
   size: number
   opacity: number
 }
 
-interface Pipe {
+export interface Pipe {
   x: number
   topHeight: number
   passed: boolean
 }
 
-interface GameState {
+export type GameStateType = 'menu' | 'playing' | 'gameOver'
+
+export interface GameState {
   birdY: number
   birdVelocity: number
   pipes: Pipe[]
   clouds: Cloud[]
   score: number
   highScore: number
-  gameOver: boolean
-  gameStarted: boolean
+  gameState: GameStateType
 }
 
 function createCloud(x?: number): Cloud {
@@ -58,8 +59,7 @@ function App() {
       clouds: [createCloud(50), createCloud(150), createCloud(280)],
       score: 0,
       highScore: saved ? parseInt(saved, 10) : 0,
-      gameOver: false,
-      gameStarted: false,
+      gameState: 'menu',
     }
   })
 
@@ -70,21 +70,20 @@ function App() {
       birdVelocity: 0,
       pipes: [],
       score: 0,
-      gameOver: false,
-      gameStarted: true,
+      gameState: 'playing',
     }))
   }, [])
 
   const jump = useCallback(() => {
-    if (state.gameOver) {
+    if (state.gameState === 'gameOver') {
       resetGame()
       return
     }
-    if (!state.gameStarted) {
-      setState(prev => ({ ...prev, gameStarted: true }))
+    if (state.gameState === 'menu') {
+      setState(prev => ({ ...prev, gameState: 'playing' }))
     }
     setState(prev => ({ ...prev, birdVelocity: JUMP_STRENGTH }))
-  }, [state.gameOver, state.gameStarted, resetGame])
+  }, [state.gameState, resetGame])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -100,11 +99,11 @@ function App() {
 
     const gameLoop = () => {
       setState(prevState => {
-        if (prevState.gameOver) return prevState
+        if (prevState.gameState === 'gameOver') return prevState
 
         const newState = { ...prevState }
 
-        if (prevState.gameStarted) {
+        if (prevState.gameState === 'playing') {
           // Apply gravity
           newState.birdVelocity += GRAVITY
           newState.birdY += newState.birdVelocity
@@ -158,23 +157,23 @@ function App() {
             if (birdRight > pipeLeft && birdLeft < pipeRight) {
               // Check vertical collision with top pipe
               if (birdTop < pipe.topHeight) {
-                newState.gameOver = true
+                newState.gameState = 'gameOver'
               }
               // Check vertical collision with bottom pipe
               if (birdBottom > pipe.topHeight + PIPE_GAP) {
-                newState.gameOver = true
+                newState.gameState = 'gameOver'
               }
             }
           }
 
           // Ground collision
           if (newState.birdY > GROUND_Y - BIRD_SIZE / 2) {
-            newState.gameOver = true
+            newState.gameState = 'gameOver'
           }
 
           // Ceiling collision
           if (newState.birdY < BIRD_SIZE / 2) {
-            newState.gameOver = true
+            newState.gameState = 'gameOver'
           }
         }
 
@@ -284,7 +283,7 @@ function App() {
     ctx.textAlign = 'left'
 
     // Draw game over screen
-    if (state.gameOver) {
+    if (state.gameState === 'gameOver') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
       ctx.fillStyle = '#fff'
@@ -298,8 +297,8 @@ function App() {
       ctx.textAlign = 'left'
     }
 
-    // Draw start screen
-    if (!state.gameStarted && !state.gameOver) {
+    // Draw start screen (menu state)
+    if (state.gameState === 'menu') {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
       ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
       ctx.fillStyle = '#fff'
