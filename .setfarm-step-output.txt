@@ -1,7 +1,0 @@
-STATUS: done
-BUILD_CMD: npm run build
-TEST_CMD: npm test
-LINT_CMD: npm run lint
-CI_NOTES: Vite + React + TypeScript + Tailwind CSS project already initialized. Build and lint pass. No tests configured yet.
-BASELINE: build-pass, lint-pass
-EXISTING_CODE: true
