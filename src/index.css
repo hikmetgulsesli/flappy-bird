@@ -1,13 +1,8 @@
+@import "../stitch/design-tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Pixel art rendering for crisp edges */
-canvas {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
 
 /* Custom scrollbar for retro feel */
 ::-webkit-scrollbar {
@@ -27,8 +22,8 @@ canvas {
   background: #5a5a5a;
 }
 
-/* Selection styling */
+/* Selection styling using bird yellow */
 ::selection {
-  background: #f4d03f;
-  color: #000;
+  background: var(--color-bird-yellow);
+  color: var(--color-text-dark);
 }

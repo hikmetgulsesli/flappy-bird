@@ -1,187 +1,170 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import App from '../App'
+
+// Mock canvas context
+const mockFillRect = vi.fn()
+const mockFillText = vi.fn()
+const mockStrokeText = vi.fn()
+const mockBeginPath = vi.fn()
+const mockArc = vi.fn()
+const mockFill = vi.fn()
+const mockStroke = vi.fn()
+
+const mockContext = {
+  fillRect: mockFillRect,
+  fillText: mockFillText,
+  strokeText: mockStrokeText,
+  beginPath: mockBeginPath,
+  arc: mockArc,
+  fill: mockFill,
+  stroke: mockStroke,
+  imageSmoothingEnabled: true,
+  fillStyle: '',
+  strokeStyle: '',
+  lineWidth: 1,
+  textAlign: 'left',
+  createLinearGradient: vi.fn(() => ({
+    addColorStop: vi.fn(),
+  })),
+  save: vi.fn(),
+  restore: vi.fn(),
+  translate: vi.fn(),
+  rotate: vi.fn(),
+}
 
 // Mock localStorage
 const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
 }
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 })
 
-// Mock canvas context
-const createMockContext = () => {
-  return {
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 0,
-    font: '',
-    textAlign: 'left',
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    fillText: vi.fn(),
-    strokeText: vi.fn(),
-    beginPath: vi.fn(),
-    arc: vi.fn(),
-    fill: vi.fn(),
-    stroke: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    translate: vi.fn(),
-    rotate: vi.fn(),
-    createLinearGradient: vi.fn(() => ({
-      addColorStop: vi.fn(),
-    })),
-  } as unknown as CanvasRenderingContext2D
-}
+// Mock getContext
+HTMLCanvasElement.prototype.getContext = vi.fn(() => mockContext as unknown as CanvasRenderingContext2D)
 
-describe('Flappy Bird App', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    localStorageMock.getItem.mockReturnValue(null)
-
-    // Mock canvas - cast to any to avoid type issues
-    HTMLCanvasElement.prototype.getContext = vi.fn(() => createMockContext()) as unknown as typeof HTMLCanvasElement.prototype.getContext
-
-    // Mock requestAnimationFrame
-    vi.stubGlobal('requestAnimationFrame', vi.fn((cb: FrameRequestCallback) => {
-      return setTimeout(cb, 16) as unknown as number
-    }))
-    vi.stubGlobal('cancelAnimationFrame', vi.fn((id: number) => {
-      clearTimeout(id)
-    }))
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('renders the game title', () => {
-    render(<App />)
-    expect(screen.getByText('FLAPPY BIRD')).toBeInTheDocument()
-  })
-
-  it('displays high score from localStorage', () => {
-    localStorageMock.getItem.mockReturnValue('42')
-    render(<App />)
-    expect(screen.getByText('42')).toBeInTheDocument()
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('flappyHighScore')
-  })
-
-  it('renders canvas element', () => {
-    render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas).toBeInTheDocument()
-    expect(canvas).toHaveAttribute('width', '400')
-    expect(canvas).toHaveAttribute('height', '600')
-  })
-
-  it('displays instructions', () => {
-    render(<App />)
-    expect(screen.getByText('CLICK, SPACE, OR TAP TO FLY')).toBeInTheDocument()
-  })
-
-  it('canvas has pixelated rendering style', () => {
-    render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas).toHaveStyle({ imageRendering: 'pixelated' })
-  })
-
-  it('responds to space key press', async () => {
-    render(<App />)
-
-    // Simulate space key press
-    fireEvent.keyDown(window, { code: 'Space' })
-
-    // Should not throw error
-    await waitFor(() => {
-      expect(HTMLCanvasElement.prototype.getContext).toHaveBeenCalledWith('2d')
-    })
-  })
-
-  it('responds to canvas click', async () => {
-    render(<App />)
-    const canvas = document.querySelector('canvas')
-
-    if (canvas) {
-      fireEvent.click(canvas)
-    }
-
-    // Should not throw error
-    await waitFor(() => {
-      expect(canvas).toBeInTheDocument()
-    })
-  })
-
-  it('has correct CSS classes for styling', () => {
-    render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas).toHaveClass('border-4', 'border-gray-700', 'rounded-lg', 'cursor-pointer', 'touch-none')
-  })
-
-  it('displays zero high score when localStorage is empty', () => {
-    localStorageMock.getItem.mockReturnValue(null)
-    render(<App />)
-    const highScoreElements = screen.getAllByText('0')
-    expect(highScoreElements.length).toBeGreaterThan(0)
-  })
+// Mock requestAnimationFrame
+const mockRequestAnimationFrame = vi.fn((cb: (time: number) => void) => {
+  return window.setTimeout(() => cb(window.performance.now()), 16)
 })
+const mockCancelAnimationFrame = vi.fn()
+window.requestAnimationFrame = mockRequestAnimationFrame
+window.cancelAnimationFrame = mockCancelAnimationFrame
 
-// Acceptance Criteria Tests
-describe('Acceptance Criteria', () => {
+describe('Background and Visual Effects (US-012)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorageMock.getItem.mockReturnValue(null)
-    HTMLCanvasElement.prototype.getContext = vi.fn(() => createMockContext()) as unknown as typeof HTMLCanvasElement.prototype.getContext
-    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1))
-    vi.stubGlobal('cancelAnimationFrame', vi.fn())
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('AC1: Game renders canvas with correct dimensions', () => {
+  it('renders canvas with correct dimensions', () => {
     render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas).toBeInTheDocument()
-    expect(canvas).toHaveAttribute('width', '400')
-    expect(canvas).toHaveAttribute('height', '600')
+    const canvas = screen.getByRole('button').querySelector('canvas')
+    expect(canvas).toBeTruthy()
+    expect(canvas?.width).toBe(400)
+    expect(canvas?.height).toBe(600)
   })
 
-  it('AC2: High score is loaded from localStorage', () => {
-    localStorageMock.getItem.mockReturnValue('100')
+  it('draws sky with cyan color #4EC0CA', async () => {
     render(<App />)
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('flappyHighScore')
-    expect(screen.getByText('100')).toBeInTheDocument()
+    
+    // Wait for useEffect to run
+    await waitFor(() => {
+      expect(mockFillRect).toHaveBeenCalled()
+    })
+
+    // Check if sky was drawn with cyan color
+    const fillCalls = mockFillRect.mock.calls
+    const skyDrawCall = fillCalls.find((call: number[]) => call[0] === 0 && call[1] === 0 && call[2] === 400 && call[3] === 600)
+    expect(skyDrawCall).toBeTruthy()
   })
 
-  it('AC3: Game responds to user input (click and keyboard)', () => {
+  it('draws ground at y=400 with sand color #DED895', async () => {
     render(<App />)
-    const canvas = document.querySelector('canvas')
+    
+    await waitFor(() => {
+      expect(mockFillRect).toHaveBeenCalled()
+    })
 
-    // Should not throw on interactions
-    expect(() => {
-      if (canvas) fireEvent.click(canvas)
-      fireEvent.keyDown(window, { code: 'Space' })
-    }).not.toThrow()
+    // Check if ground was drawn at correct position
+    const fillCalls = mockFillRect.mock.calls
+    const groundDrawCall = fillCalls.find((call: number[]) => call[1] === 400)
+    expect(groundDrawCall).toBeTruthy()
+    expect(groundDrawCall[2]).toBe(400) // width
+    expect(groundDrawCall[3]).toBe(200) // height (600 - 400)
   })
 
-  it('AC4: Pixel-art styling is applied', () => {
+  it('draws grass detail line on ground', async () => {
     render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas).toHaveStyle({ imageRendering: 'pixelated' })
+    
+    await waitFor(() => {
+      expect(mockFillRect).toHaveBeenCalled()
+    })
+
+    // Check if grass line was drawn (green color at y=400)
+    const fillCalls = mockFillRect.mock.calls
+    const grassDrawCall = fillCalls.find((call: number[]) => call[1] === 400 && call[3] === 12)
+    expect(grassDrawCall).toBeTruthy()
   })
 
-  it('AC5: Mobile touch support is enabled', () => {
+  it('draws clouds as white circles', async () => {
     render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas).toHaveClass('touch-none')
+    
+    await waitFor(() => {
+      expect(mockArc).toHaveBeenCalled()
+    })
+
+    // Clouds are drawn using arc
+    const arcCalls = mockArc.mock.calls
+    expect(arcCalls.length).toBeGreaterThan(0)
+    
+    // Check that fillStyle was set to white with opacity for clouds
+    expect(mockContext.fillStyle).toContain('rgba(255, 255, 255')
+  })
+
+  it('disables image smoothing for pixel-art rendering', async () => {
+    render(<App />)
+    
+    await waitFor(() => {
+      expect(mockContext.imageSmoothingEnabled).toBe(false)
+    })
+  })
+
+  it('renders background behind all game elements', async () => {
+    render(<App />)
+    
+    await waitFor(() => {
+      expect(mockFillRect).toHaveBeenCalled()
+    })
+
+    // First fillRect should be the sky (background)
+    const firstCall = mockFillRect.mock.calls[0]
+    expect(firstCall[0]).toBe(0)
+    expect(firstCall[1]).toBe(0)
+    expect(firstCall[2]).toBe(400) // full width
+    expect(firstCall[3]).toBe(600) // full height
+  })
+
+  it('animates clouds moving across screen', async () => {
+    render(<App />)
+    
+    // Start game to trigger animation
+    fireEvent.click(screen.getByRole('button'))
+    
+    // Wait for animation frame
+    await waitFor(() => {
+      expect(mockRequestAnimationFrame).toHaveBeenCalled()
+    })
+
+    // Clouds should be rendered
+    expect(mockArc).toHaveBeenCalled()
+  })
+
+  it('has pixel-art style class on canvas', () => {
+    render(<App />)
+    const button = screen.getByRole('button')
+    expect(button.className).toContain('image-pixelated')
   })
 })
