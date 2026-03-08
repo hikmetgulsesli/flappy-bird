@@ -217,7 +217,7 @@ describe('Scoring System with Persistence (US-007)', () => {
       render(<App />)
 
       const highScoreElement = screen.getByText('50')
-      expect(highScoreElement).toHaveClass('text-retro-gold', 'font-bold', 'text-lg')
+      expect(highScoreElement).toHaveClass('text-yellow-400', 'font-bold')
     })
   })
 

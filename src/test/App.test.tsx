@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, fireEvent, waitFor } from '@testing-library/react'
 import App from '../App'
 
 // Mock canvas context
@@ -10,6 +10,8 @@ const mockBeginPath = vi.fn()
 const mockArc = vi.fn()
 const mockFill = vi.fn()
 const mockStroke = vi.fn()
+const mockMoveTo = vi.fn()
+const mockLineTo = vi.fn()
 
 const mockContext = {
   fillRect: mockFillRect,
@@ -19,6 +21,8 @@ const mockContext = {
   arc: mockArc,
   fill: mockFill,
   stroke: mockStroke,
+  moveTo: mockMoveTo,
+  lineTo: mockLineTo,
   imageSmoothingEnabled: true,
   fillStyle: '',
   strokeStyle: '',
@@ -42,8 +46,10 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 })
 
-// Mock getContext
-HTMLCanvasElement.prototype.getContext = vi.fn(() => mockContext as unknown as CanvasRenderingContext2D)
+// Mock getContext - use type assertion to bypass strict overload checking
+Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+  value: vi.fn(() => mockContext),
+})
 
 // Mock requestAnimationFrame
 const mockRequestAnimationFrame = vi.fn((cb: (time: number) => void) => {
@@ -61,7 +67,7 @@ describe('Background and Visual Effects (US-012)', () => {
 
   it('renders canvas with correct dimensions', () => {
     render(<App />)
-    const canvas = screen.getByRole('button').querySelector('canvas')
+    const canvas = document.querySelector('canvas')
     expect(canvas).toBeTruthy()
     expect(canvas?.width).toBe(400)
     expect(canvas?.height).toBe(600)
@@ -92,8 +98,8 @@ describe('Background and Visual Effects (US-012)', () => {
     const fillCalls = mockFillRect.mock.calls
     const groundDrawCall = fillCalls.find((call: number[]) => call[1] === 400)
     expect(groundDrawCall).toBeTruthy()
-    expect(groundDrawCall[2]).toBe(400) // width
-    expect(groundDrawCall[3]).toBe(200) // height (600 - 400)
+    expect(groundDrawCall![2]).toBe(400) // width
+    expect(groundDrawCall![3]).toBe(200) // height (600 - 400)
   })
 
   it('draws grass detail line on ground', async () => {
@@ -151,7 +157,10 @@ describe('Background and Visual Effects (US-012)', () => {
     render(<App />)
     
     // Start game to trigger animation
-    fireEvent.click(screen.getByRole('button'))
+    const canvas = document.querySelector('canvas')
+    if (canvas) {
+      fireEvent.click(canvas)
+    }
     
     // Wait for animation frame
     await waitFor(() => {
@@ -164,7 +173,7 @@ describe('Background and Visual Effects (US-012)', () => {
 
   it('has pixel-art style class on canvas', () => {
     render(<App />)
-    const button = screen.getByRole('button')
-    expect(button.className).toContain('image-pixelated')
+    const canvas = document.querySelector('canvas')
+    expect(canvas?.classList.contains('image-pixelated')).toBe(true)
   })
 })
