@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { Bird, renderBird, BIRD_SIZE } from './bird'
 import './index.css'
 
 const GAME_WIDTH = 400
 const GAME_HEIGHT = 600
-const BIRD_SIZE = 30
 const PIPE_WIDTH = 60
 const PIPE_GAP = 150
-const GRAVITY = 0.5
-const JUMP_STRENGTH = -8
 const PIPE_SPEED = 3
 
 interface Pipe {
@@ -17,8 +15,6 @@ interface Pipe {
 }
 
 interface GameState {
-  birdY: number
-  birdVelocity: number
   pipes: Pipe[]
   score: number
   highScore: number
@@ -29,11 +25,11 @@ interface GameState {
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
+  const birdRef = useRef<Bird | null>(null)
+  
   const [state, setState] = useState<GameState>(() => {
     const saved = localStorage.getItem('flappyHighScore')
     return {
-      birdY: GAME_HEIGHT / 2,
-      birdVelocity: 0,
       pipes: [],
       score: 0,
       highScore: saved ? parseInt(saved, 10) : 0,
@@ -42,11 +38,17 @@ function App() {
     }
   })
 
+  // Initialize bird
+  useEffect(() => {
+    birdRef.current = new Bird({ initialY: GAME_HEIGHT / 2 })
+  }, [])
+
   const resetGame = useCallback(() => {
+    if (birdRef.current) {
+      birdRef.current.reset(GAME_HEIGHT / 2)
+    }
     setState(prev => ({
       ...prev,
-      birdY: GAME_HEIGHT / 2,
-      birdVelocity: 0,
       pipes: [],
       score: 0,
       gameOver: false,
@@ -62,7 +64,9 @@ function App() {
     if (!state.gameStarted) {
       setState(prev => ({ ...prev, gameStarted: true }))
     }
-    setState(prev => ({ ...prev, birdVelocity: JUMP_STRENGTH }))
+    if (birdRef.current) {
+      birdRef.current.jump()
+    }
   }, [state.gameOver, state.gameStarted, resetGame])
 
   useEffect(() => {
@@ -75,34 +79,45 @@ function App() {
     let frameCount = 0
 
     const gameLoop = () => {
+      if (birdRef.current && state.gameStarted && !state.gameOver) {
+        // Update bird physics
+        birdRef.current.update()
+        
+        const birdY = birdRef.current.getY()
+        const halfBird = BIRD_SIZE / 2
+        
+        // Check ground/ceiling collision
+        if (birdY < halfBird || birdY > GAME_HEIGHT - halfBird) {
+          setState(prev => ({ ...prev, gameOver: true }))
+        }
+      }
+
       setState(prevState => {
-        if (prevState.gameOver) return prevState
+        if (prevState.gameOver || !prevState.gameStarted) return prevState
 
         const newState = { ...prevState }
+        
+        // Generate pipes
+        frameCount++
+        if (frameCount % 100 === 0) {
+          const minHeight = 50
+          const maxHeight = GAME_HEIGHT - PIPE_GAP - minHeight
+          const topHeight = Math.floor(Math.random() * (maxHeight - minHeight) + minHeight)
+          newState.pipes = [...newState.pipes, { x: GAME_WIDTH, topHeight, passed: false }]
+        }
 
-        if (prevState.gameStarted) {
-          // Apply gravity
-          newState.birdVelocity += GRAVITY
-          newState.birdY += newState.birdVelocity
+        // Move pipes
+        newState.pipes = newState.pipes
+          .map(pipe => ({ ...pipe, x: pipe.x - PIPE_SPEED }))
+          .filter(pipe => pipe.x + PIPE_WIDTH > 0)
 
-          // Generate pipes
-          frameCount++
-          if (frameCount % 100 === 0) {
-            const minHeight = 50
-            const maxHeight = GAME_HEIGHT - PIPE_GAP - minHeight
-            const topHeight = Math.floor(Math.random() * (maxHeight - minHeight) + minHeight)
-            newState.pipes = [...newState.pipes, { x: GAME_WIDTH, topHeight, passed: false }]
-          }
-
-          // Move pipes
-          newState.pipes = newState.pipes
-            .map(pipe => ({ ...pipe, x: pipe.x - PIPE_SPEED }))
-            .filter(pipe => pipe.x + PIPE_WIDTH > 0)
-
-          // Check collisions and score
+        // Check collisions and score
+        const bird = birdRef.current
+        if (bird) {
+          const birdY = bird.getY()
           const birdLeft = GAME_WIDTH / 2 - BIRD_SIZE / 2
           const birdRight = birdLeft + BIRD_SIZE
-          const birdTop = newState.birdY - BIRD_SIZE / 2
+          const birdTop = birdY - BIRD_SIZE / 2
           const birdBottom = birdTop + BIRD_SIZE
 
           for (const pipe of newState.pipes) {
@@ -132,11 +147,6 @@ function App() {
               }
             }
           }
-
-          // Ground/ceiling collision
-          if (newState.birdY < BIRD_SIZE / 2 || newState.birdY > GAME_HEIGHT - BIRD_SIZE / 2) {
-            newState.gameOver = true
-          }
         }
 
         return newState
@@ -152,7 +162,7 @@ function App() {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [])
+  }, [state.gameOver, state.gameStarted])
 
   // Draw game
   useEffect(() => {
@@ -180,23 +190,11 @@ function App() {
       ctx.fillStyle = '#228B22'
     }
 
-    // Draw bird
-    ctx.fillStyle = '#FFD700'
-    ctx.beginPath()
-    ctx.arc(GAME_WIDTH / 2, state.birdY, BIRD_SIZE / 2, 0, Math.PI * 2)
-    ctx.fill()
-    // Bird eye
-    ctx.fillStyle = '#000'
-    ctx.beginPath()
-    ctx.arc(GAME_WIDTH / 2 + 5, state.birdY - 5, 4, 0, Math.PI * 2)
-    ctx.fill()
-    // Bird beak
-    ctx.fillStyle = '#FF8C00'
-    ctx.beginPath()
-    ctx.moveTo(GAME_WIDTH / 2 + 10, state.birdY)
-    ctx.lineTo(GAME_WIDTH / 2 + 20, state.birdY + 3)
-    ctx.lineTo(GAME_WIDTH / 2 + 10, state.birdY + 6)
-    ctx.fill()
+    // Draw bird using the new bird module
+    if (birdRef.current) {
+      const birdState = birdRef.current.getState()
+      renderBird(ctx, GAME_WIDTH / 2, birdState.y, birdState.rotation)
+    }
 
     // Draw score
     ctx.fillStyle = '#000'
