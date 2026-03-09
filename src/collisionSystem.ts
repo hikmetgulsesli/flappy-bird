@@ -23,6 +23,7 @@ export interface Pipe {
   topHeight: number
   width: number
   gap: number
+  passed?: boolean
 }
 
 export interface CollisionResult {
@@ -51,6 +52,7 @@ export function createPipe(x: number, topHeight: number): Pipe {
     topHeight,
     width: PIPE_WIDTH,
     gap: PIPE_GAP,
+    passed: false,
   }
 }
 
