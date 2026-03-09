@@ -3,14 +3,13 @@
 
 export const GAME_WIDTH = 400
 export const GAME_HEIGHT = 600
-export const BIRD_SIZE = 24
-export const PIPE_WIDTH = 52
-export const PIPE_GAP = 140
-export const GROUND_HEIGHT = 50
+export const BIRD_SIZE = 30
+export const PIPE_WIDTH = 60
+export const PIPE_GAP = 150
 export const CEILING_Y = 0
 
-// Ground Y position (where collision occurs)
-export const GROUND_Y = GAME_HEIGHT - GROUND_HEIGHT
+// Ground Y position (where collision occurs) - Story US-012: Ground at y=400
+export const GROUND_Y = 400
 
 export interface Bird {
   x: number
