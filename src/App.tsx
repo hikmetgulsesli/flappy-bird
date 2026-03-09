@@ -298,7 +298,7 @@ function App() {
       }
 
       // Single game over state setting (centralized logic)
-      if (isGameOver && state.gameState !== 'gameOver') {
+      if (isGameOver) {
         state.gameState = 'gameOver'
         state.deathTime = Date.now()
         state.particles = createExplosion(GAME_WIDTH / 2, collisionY, colorsRef.current)
