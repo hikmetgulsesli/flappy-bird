@@ -1,2 +1,2 @@
-export { GameCanvas } from './GameCanvas'
-export type { GameCanvasProps } from './GameCanvas'
+export { GameOverScreen } from './GameOverScreen'
+export { MenuScreen } from './MenuScreen'

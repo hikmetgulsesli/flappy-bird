@@ -117,7 +117,7 @@ describe('Background and Visual Effects (US-012)', () => {
 
   it('draws clouds as white circles', async () => {
     render(<App />)
-    
+
     await waitFor(() => {
       expect(mockArc).toHaveBeenCalled()
     })
@@ -125,16 +125,9 @@ describe('Background and Visual Effects (US-012)', () => {
     // Clouds are drawn using arc
     const arcCalls = mockArc.mock.calls
     expect(arcCalls.length).toBeGreaterThan(0)
-    
+
     // Check that fillStyle was set to white with opacity for clouds
-    // Browser may normalize rgba(255, 255, 255, x) to #fff or rgb(255, 255, 255)
-    const fillStyle = mockContext.fillStyle as string
-    const isWhite =
-      fillStyle.includes('rgba(255, 255, 255') ||
-      fillStyle.includes('rgb(255, 255, 255') ||
-      fillStyle === '#fff' ||
-      fillStyle === '#ffffff'
-    expect(isWhite).toBe(true)
+    expect(mockContext.fillStyle).toMatch(/rgba\(255,\s*255,\s*255|#fff/)
   })
 
   it('disables image smoothing for pixel-art rendering', async () => {

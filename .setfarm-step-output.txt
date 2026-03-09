@@ -1,3 +1,0 @@
-STATUS: done
-VERIFIED: Fixed PR review issues (performance with useRef, SSR localStorage guard, centralized game over logic, deltaTime capping), smoke test passed, merged PR
-MERGED: true
