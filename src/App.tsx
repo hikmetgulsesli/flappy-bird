@@ -43,6 +43,28 @@ interface GameState {
   gameStarted: boolean
 }
 
+const INITIAL_CLOUDS: Cloud[] = [
+  { x: 50, y: 50, size: 30, speed: 0.3 },
+  { x: 150, y: 80, size: 25, speed: 0.2 },
+  { x: 220, y: 40, size: 35, speed: 0.25 },
+]
+
+function drawCircle(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {
+  ctx.beginPath()
+  ctx.arc(x, y, radius, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+function drawCloud(ctx: CanvasRenderingContext2D, cloud: Cloud) {
+  const { x, y, size } = cloud
+  // Main body
+  drawCircle(ctx, x, y, size / 2)
+  // Other parts
+  drawCircle(ctx, x + size * 0.3, y - size * 0.2, size * 0.4)
+  drawCircle(ctx, x - size * 0.3, y - size * 0.1, size * 0.35)
+  drawCircle(ctx, x + size * 0.1, y + size * 0.1, size * 0.3)
+}
+
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
@@ -120,13 +142,13 @@ function App() {
           newState.pipes = updatePipes(newState.pipes)
 
           // Move clouds (parallax effect)
-          newState.clouds = newState.clouds.map(cloud => ({
-            ...cloud,
-            x: cloud.x - cloud.speed
-          })).map(cloud => ({
-            ...cloud,
-            x: cloud.x < -cloud.size * 2 ? GAME_WIDTH + cloud.size : cloud.x
-          }))
+          newState.clouds = newState.clouds.map(cloud => {
+            const newX = cloud.x - cloud.speed
+            return {
+              ...cloud,
+              x: newX < -cloud.size * 2 ? GAME_WIDTH + cloud.size : newX,
+            }
+          })
 
           // Check collisions and score
           const birdLeft = GAME_WIDTH / 2 - BIRD_SIZE / 2
