@@ -70,7 +70,7 @@ function App() {
       birdVelocity: 0,
       pipes: [],
       score: 0,
-      gameState: 'playing',
+      gameState: 'menu',
     }))
   }, [])
 
