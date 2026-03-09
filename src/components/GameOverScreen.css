@@ -12,7 +12,11 @@
   justify-content: center;
   z-index: 100;
   cursor: pointer;
-  outline: none;
+}
+
+.game-over-overlay:focus {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
 }
 
 .game-over-box {

@@ -27,8 +27,6 @@ describe('GameOverScreen', () => {
     const overlay = screen.getByTestId('game-over-overlay')
     expect(overlay).toBeInTheDocument()
     expect(overlay).toHaveClass('game-over-overlay')
-    // Check that the overlay has the correct class for styling
-    expect(overlay).toHaveClass('game-over-overlay')
   })
 
   it('should display beige score box with black border', () => {
