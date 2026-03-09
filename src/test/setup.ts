@@ -1,10 +1,52 @@
-import '@testing-library/jest-dom'
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
+import * as matchers from '@testing-library/jest-dom/matchers'
+
+expect.extend(matchers)
+
+// Mock canvas 2d context
+class MockCanvasRenderingContext2D {
+  fillStyle = '#000000'
+  strokeStyle = '#000000'
+  lineWidth = 1
+  font = '10px sans-serif'
+  textAlign = 'start'
+  imageSmoothingEnabled = true
+  
+  fillRect = vi.fn()
+  strokeRect = vi.fn()
+  clearRect = vi.fn()
+  beginPath = vi.fn()
+  closePath = vi.fn()
+  moveTo = vi.fn()
+  lineTo = vi.fn()
+  stroke = vi.fn()
+  fill = vi.fn()
+  arc = vi.fn()
+  save = vi.fn()
+  restore = vi.fn()
+  translate = vi.fn()
+  rotate = vi.fn()
+  fillText = vi.fn()
+  strokeText = vi.fn()
+  createLinearGradient = vi.fn(() => ({
+    addColorStop: vi.fn(),
+  }))
+}
+
+// Mock HTMLCanvasElement.prototype.getContext
+Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+  value: function(contextType: string) {
+    if (contextType === '2d') {
+      return new MockCanvasRenderingContext2D()
+    }
+    return null
+  },
+})
 
 // Mock CSS imports
 Object.defineProperty(window, 'getComputedStyle', {
   value: () => {
-    const styles: Record<string, string> = {
+    const styles = {
       '--color-sky-cyan': '#4EC0CA',
       '--color-sky-gradient': '#70c5ce',
       '--color-sky-light': '#a8e6cf',
@@ -34,7 +76,7 @@ Object.defineProperty(window, 'getComputedStyle', {
     }
     
     return {
-      getPropertyValue: (prop: string) => styles[prop] || '',
+      getPropertyValue: (prop: string) => styles[prop as keyof typeof styles] || '',
     }
   },
 })
