@@ -200,8 +200,8 @@ describe('Scoring System with Persistence (US-007)', () => {
       localStorageData['flappyHighScore'] = '999'
       render(<App />)
 
-      expect(screen.getByText(/HIGH SCORE/i)).toBeInTheDocument()
-      expect(screen.getByText('999')).toBeInTheDocument()
+      // Menu screen shows high score - check by testid
+      expect(screen.getByTestId('menu-highscore')).toHaveTextContent('999')
     })
 
     it('should have styled high score display', () => {

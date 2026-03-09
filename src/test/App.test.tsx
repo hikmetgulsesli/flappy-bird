@@ -52,9 +52,8 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
 })
 
 // Mock requestAnimationFrame
-let rafIdCounter = 0
 const mockRequestAnimationFrame = vi.fn((cb: (time: number) => void) => {
-  return ++rafIdCounter
+  return window.setTimeout(() => cb(window.performance.now()), 16)
 })
 const mockCancelAnimationFrame = vi.fn()
 window.requestAnimationFrame = mockRequestAnimationFrame
@@ -128,9 +127,14 @@ describe('Background and Visual Effects (US-012)', () => {
     expect(arcCalls.length).toBeGreaterThan(0)
     
     // Check that fillStyle was set to white with opacity for clouds
-    // The mock tracks the last fillStyle, but we can verify arcs were called
-    // which is the primary way clouds are drawn
-    expect(arcCalls.length).toBeGreaterThanOrEqual(3) // At least 3 circles per cloud
+    // Browser may normalize rgba(255, 255, 255, x) to #fff or rgb(255, 255, 255)
+    const fillStyle = mockContext.fillStyle as string
+    const isWhite =
+      fillStyle.includes('rgba(255, 255, 255') ||
+      fillStyle.includes('rgb(255, 255, 255') ||
+      fillStyle === '#fff' ||
+      fillStyle === '#ffffff'
+    expect(isWhite).toBe(true)
   })
 
   it('disables image smoothing for pixel-art rendering', async () => {
