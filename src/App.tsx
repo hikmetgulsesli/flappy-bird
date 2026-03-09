@@ -1,12 +1,31 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { Bird, renderBird, BIRD_SIZE } from './bird'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import './index.css'
+import { MenuScreen, GameOverScreen } from './components'
+import {
+  GAME_WIDTH,
+  GAME_HEIGHT,
+  PIPE_WIDTH,
+  PIPE_GAP,
+  PIPE_SPEED,
+  MIN_PIPE_HEIGHT,
+} from './pipeSystem'
 
-const GAME_WIDTH = 400
-const GAME_HEIGHT = 600
-const PIPE_WIDTH = 60
-const PIPE_GAP = 150
-const PIPE_SPEED = 3
+const GROUND_Y = 400
+const GROUND_HEIGHT = GAME_HEIGHT - GROUND_Y
+const BIRD_SIZE = 24
+const GRAVITY = 0.25
+const JUMP_STRENGTH = -4.5
+const CLOUD_SPEED = 0.5
+const PIPE_SPAWN_INTERVAL = 120
+
+ type GameStateType = 'menu' | 'playing' | 'gameOver'
+
+interface Cloud {
+  x: number
+  y: number
+  size: number
+  opacity: number
+}
 
 interface Pipe {
   x: number
@@ -15,59 +34,76 @@ interface Pipe {
 }
 
 interface GameState {
+  birdY: number
+  birdVelocity: number
   pipes: Pipe[]
+  clouds: Cloud[]
   score: number
   highScore: number
-  gameOver: boolean
-  gameStarted: boolean
+  gameState: GameStateType
+}
+
+function createCloud(x?: number): Cloud {
+  return {
+    x: x ?? Math.random() * GAME_WIDTH,
+    y: 30 + Math.random() * 150,
+    size: 30 + Math.random() * 40,
+    opacity: 0.3,
+  }
+}
+
+function generateInitialClouds(): Cloud[] {
+  return Array.from({ length: 3 }, (_, i) =>
+    createCloud(50 + i * 100 + Math.random() * 50)
+  )
 }
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
-  const birdRef = useRef<Bird | null>(null)
-  
+  const frameCountRef = useRef(0)
   const [state, setState] = useState<GameState>(() => {
     const saved = localStorage.getItem('flappyHighScore')
     return {
+      birdY: GAME_HEIGHT / 2,
+      birdVelocity: 0,
       pipes: [],
+      clouds: generateInitialClouds(),
       score: 0,
       highScore: saved ? parseInt(saved, 10) : 0,
-      gameOver: false,
-      gameStarted: false,
+      gameState: 'menu',
     }
   })
 
-  // Initialize bird
-  useEffect(() => {
-    birdRef.current = new Bird({ initialY: GAME_HEIGHT / 2 })
+  const startGame = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      gameState: 'playing',
+    }))
   }, [])
 
   const resetGame = useCallback(() => {
-    if (birdRef.current) {
-      birdRef.current.reset(GAME_HEIGHT / 2)
-    }
     setState(prev => ({
       ...prev,
+      birdY: GAME_HEIGHT / 2,
+      birdVelocity: 0,
       pipes: [],
       score: 0,
-      gameOver: false,
-      gameStarted: true,
+      gameState: 'playing',
     }))
   }, [])
 
   const jump = useCallback(() => {
-    if (state.gameOver) {
+    if (state.gameState === 'gameOver') {
       resetGame()
       return
     }
-    if (!state.gameStarted) {
-      setState(prev => ({ ...prev, gameStarted: true }))
+    if (state.gameState === 'menu') {
+      startGame()
+      return
     }
-    if (birdRef.current) {
-      birdRef.current.jump()
-    }
-  }, [state.gameOver, state.gameStarted, resetGame])
+    setState(prev => ({ ...prev, birdVelocity: JUMP_STRENGTH }))
+  }, [state.gameState, resetGame, startGame])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -76,48 +112,51 @@ function App() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    let frameCount = 0
+    // Disable smoothing for pixel art look
+    ctx.imageSmoothingEnabled = false
 
     const gameLoop = () => {
-      if (birdRef.current && state.gameStarted && !state.gameOver) {
-        // Update bird physics
-        birdRef.current.update()
-        
-        const birdY = birdRef.current.getY()
-        const halfBird = BIRD_SIZE / 2
-        
-        // Check ground/ceiling collision
-        if (birdY < halfBird || birdY > GAME_HEIGHT - halfBird) {
-          setState(prev => ({ ...prev, gameOver: true }))
-        }
-      }
-
       setState(prevState => {
-        if (prevState.gameOver || !prevState.gameStarted) return prevState
+        if (prevState.gameState === 'gameOver') return prevState
 
         const newState = { ...prevState }
-        
-        // Generate pipes
-        frameCount++
-        if (frameCount % 100 === 0) {
-          const minHeight = 50
-          const maxHeight = GAME_HEIGHT - PIPE_GAP - minHeight
-          const topHeight = Math.floor(Math.random() * (maxHeight - minHeight) + minHeight)
-          newState.pipes = [...newState.pipes, { x: GAME_WIDTH, topHeight, passed: false }]
-        }
 
-        // Move pipes
-        newState.pipes = newState.pipes
-          .map(pipe => ({ ...pipe, x: pipe.x - PIPE_SPEED }))
-          .filter(pipe => pipe.x + PIPE_WIDTH > 0)
+        if (prevState.gameState === 'playing') {
+          // Apply gravity
+          newState.birdVelocity += GRAVITY
+          newState.birdY += newState.birdVelocity
 
-        // Check collisions and score
-        const bird = birdRef.current
-        if (bird) {
-          const birdY = bird.getY()
+          // Generate pipes
+          frameCountRef.current++
+          if (frameCountRef.current % PIPE_SPAWN_INTERVAL === 0) {
+            const maxHeight = GROUND_Y - PIPE_GAP - MIN_PIPE_HEIGHT
+            const topHeight = Math.floor(Math.random() * (maxHeight - MIN_PIPE_HEIGHT) + MIN_PIPE_HEIGHT)
+            newState.pipes = [...newState.pipes, { x: GAME_WIDTH, topHeight, passed: false }]
+          }
+
+          // Move pipes
+          newState.pipes = newState.pipes
+            .map(pipe => ({ ...pipe, x: pipe.x - PIPE_SPEED }))
+            .filter(pipe => pipe.x + PIPE_WIDTH > 0)
+
+          // Move clouds (combined single map operation)
+          newState.clouds = newState.clouds.map(cloud => {
+            let newX = cloud.x - CLOUD_SPEED
+            if (newX < -cloud.size * 2) {
+              newX = GAME_WIDTH + cloud.size
+            }
+            return { ...cloud, x: newX }
+          }).filter(cloud => cloud.x + cloud.size > 0)
+
+          // Add new cloud occasionally
+          if (frameCountRef.current % 300 === 0) {
+            newState.clouds = [...newState.clouds, createCloud(GAME_WIDTH + 50)]
+          }
+
+          // Check collisions and score
           const birdLeft = GAME_WIDTH / 2 - BIRD_SIZE / 2
           const birdRight = birdLeft + BIRD_SIZE
-          const birdTop = birdY - BIRD_SIZE / 2
+          const birdTop = newState.birdY - BIRD_SIZE / 2
           const birdBottom = birdTop + BIRD_SIZE
 
           for (const pipe of newState.pipes) {
@@ -139,13 +178,23 @@ function App() {
             if (birdRight > pipeLeft && birdLeft < pipeRight) {
               // Check vertical collision with top pipe
               if (birdTop < pipe.topHeight) {
-                newState.gameOver = true
+                newState.gameState = 'gameOver'
               }
               // Check vertical collision with bottom pipe
               if (birdBottom > pipe.topHeight + PIPE_GAP) {
-                newState.gameOver = true
+                newState.gameState = 'gameOver'
               }
             }
+          }
+
+          // Ground collision
+          if (newState.birdY > GROUND_Y - BIRD_SIZE / 2) {
+            newState.gameState = 'gameOver'
+          }
+
+          // Ceiling collision
+          if (newState.birdY < BIRD_SIZE / 2) {
+            newState.gameState = 'gameOver'
           }
         }
 
@@ -162,7 +211,7 @@ function App() {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [state.gameOver, state.gameStarted])
+  }, [])
 
   // Draw game
   useEffect(() => {
@@ -172,9 +221,51 @@ function App() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Clear canvas
-    ctx.fillStyle = '#87CEEB'
+    // Disable smoothing for pixel art look
+    ctx.imageSmoothingEnabled = false
+
+    // Draw sky - cyan background #4EC0CA
+    ctx.fillStyle = '#4EC0CA'
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
+
+    // Draw clouds - white circles at 30% opacity (data-driven approach)
+    for (const cloud of state.clouds) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`
+      const cloudParts = [
+        { dx: 0, dy: 0, scale: 0.5 },
+        { dx: 0.3, dy: -0.2, scale: 0.4 },
+        { dx: -0.3, dy: -0.1, scale: 0.35 },
+        { dx: 0.1, dy: 0.1, scale: 0.3 },
+      ]
+      for (const part of cloudParts) {
+        ctx.beginPath()
+        ctx.arc(
+          cloud.x + cloud.size * part.dx,
+          cloud.y + cloud.size * part.dy,
+          cloud.size * part.scale,
+          0,
+          Math.PI * 2
+        )
+        ctx.fill()
+      }
+    }
+
+    // Draw ground - sand color #DED895 at y=400
+    ctx.fillStyle = '#DED895'
+    ctx.fillRect(0, GROUND_Y, GAME_WIDTH, GROUND_HEIGHT)
+
+    // Draw grass detail line on ground
+    ctx.fillStyle = '#73BF2E'
+    ctx.fillRect(0, GROUND_Y, GAME_WIDTH, 12)
+    // Grass texture - pixelated stripes
+    ctx.fillStyle = '#558B2F'
+    for (let i = 0; i < GAME_WIDTH; i += 20) {
+      ctx.fillRect(i, GROUND_Y, 4, 12)
+      ctx.fillRect(i + 10, GROUND_Y + 4, 4, 8)
+    }
+    // Ground top border line
+    ctx.fillStyle = '#5a7d2a'
+    ctx.fillRect(0, GROUND_Y, GAME_WIDTH, 2)
 
     // Draw pipes
     ctx.fillStyle = '#228B22'
@@ -182,7 +273,7 @@ function App() {
       // Top pipe
       ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight)
       // Bottom pipe
-      ctx.fillRect(pipe.x, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, GAME_HEIGHT - pipe.topHeight - PIPE_GAP)
+      ctx.fillRect(pipe.x, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, GROUND_Y - pipe.topHeight - PIPE_GAP)
       // Pipe caps
       ctx.fillStyle = '#1a6b1a'
       ctx.fillRect(pipe.x - 2, pipe.topHeight - 20, PIPE_WIDTH + 4, 20)
@@ -190,44 +281,33 @@ function App() {
       ctx.fillStyle = '#228B22'
     }
 
-    // Draw bird using the new bird module
-    if (birdRef.current) {
-      const birdState = birdRef.current.getState()
-      renderBird(ctx, GAME_WIDTH / 2, birdState.y, birdState.rotation)
-    }
+    // Draw bird
+    ctx.fillStyle = '#FFD700'
+    ctx.beginPath()
+    ctx.arc(GAME_WIDTH / 2, state.birdY, BIRD_SIZE / 2, 0, Math.PI * 2)
+    ctx.fill()
+    // Bird eye
+    ctx.fillStyle = '#000'
+    ctx.beginPath()
+    ctx.arc(GAME_WIDTH / 2 + 5, state.birdY - 5, 4, 0, Math.PI * 2)
+    ctx.fill()
+    // Bird beak
+    ctx.fillStyle = '#FF8C00'
+    ctx.beginPath()
+    ctx.moveTo(GAME_WIDTH / 2 + 10, state.birdY)
+    ctx.lineTo(GAME_WIDTH / 2 + 20, state.birdY + 3)
+    ctx.lineTo(GAME_WIDTH / 2 + 10, state.birdY + 6)
+    ctx.fill()
 
     // Draw score
-    ctx.fillStyle = '#000'
-    ctx.font = 'bold 24px monospace'
-    ctx.fillText(state.score.toString(), 20, 40)
-
-    // Draw game over screen
-    if (state.gameOver) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
-      ctx.fillStyle = '#fff'
-      ctx.font = 'bold 32px monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('GAME OVER', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50)
-      ctx.font = '20px monospace'
-      ctx.fillText(`Score: ${state.score}`, GAME_WIDTH / 2, GAME_HEIGHT / 2)
-      ctx.fillText(`High Score: ${state.highScore}`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30)
-      ctx.fillText('Click to restart', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 80)
-      ctx.textAlign = 'left'
-    }
-
-    // Draw start screen
-    if (!state.gameStarted && !state.gameOver) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
-      ctx.fillStyle = '#fff'
-      ctx.font = 'bold 28px monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('FLAPPY BIRD', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30)
-      ctx.font = '16px monospace'
-      ctx.fillText('Click or Space to fly', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20)
-      ctx.textAlign = 'left'
-    }
+    ctx.fillStyle = '#fff'
+    ctx.strokeStyle = '#000'
+    ctx.lineWidth = 3
+    ctx.font = 'bold 32px monospace'
+    ctx.textAlign = 'center'
+    ctx.strokeText(state.score.toString(), GAME_WIDTH / 2, 50)
+    ctx.fillText(state.score.toString(), GAME_WIDTH / 2, 50)
+    ctx.textAlign = 'left'
   }, [state])
 
   // Handle keyboard input
@@ -243,23 +323,47 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [jump])
 
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    jump()
+  }, [jump])
+
+  const handleTouchDefault = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-white mb-4 font-mono">Flappy Bird</h1>
-        <canvas
-          ref={canvasRef}
-          width={GAME_WIDTH}
-          height={GAME_HEIGHT}
-          onClick={jump}
-          onTouchStart={(e) => {
-            e.preventDefault()
-            jump()
-          }}
-          className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none"
-        />
+        <div className="relative inline-block">
+          <canvas
+            ref={canvasRef}
+            width={GAME_WIDTH}
+            height={GAME_HEIGHT}
+            onClick={jump}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchDefault}
+            onTouchEnd={handleTouchDefault}
+            className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none image-pixelated"
+            style={{ imageRendering: 'pixelated' }}
+            data-testid="game-canvas"
+          />
+          {state.gameState === 'menu' && (
+            <MenuScreen highScore={state.highScore} onStart={startGame} />
+          )}
+          <GameOverScreen
+            score={state.score}
+            highScore={state.highScore}
+            onRestart={resetGame}
+            isVisible={state.gameState === 'gameOver'}
+          />
+        </div>
         <div className="mt-4 text-gray-400 text-sm">
-          <p>High Score: <span className="text-yellow-400 font-bold">{state.highScore}</span></p>
+          <p>
+            High Score:{' '}
+            <span className="text-retro-gold font-bold">{state.highScore}</span>
+          </p>
           <p className="mt-2">Click or Space to fly</p>
         </div>
       </div>
