@@ -52,8 +52,8 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
 })
 
 // Mock requestAnimationFrame
-const mockRequestAnimationFrame = vi.fn((cb: (time: number) => void) => {
-  return window.setTimeout(() => cb(window.performance.now()), 16)
+const mockRequestAnimationFrame = vi.fn((_cb: (time: number) => void) => {
+  return window.setTimeout(() => _cb(window.performance.now()), 16)
 })
 const mockCancelAnimationFrame = vi.fn()
 window.requestAnimationFrame = mockRequestAnimationFrame

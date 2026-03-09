@@ -1,4 +1,3 @@
-import { useEffect, useCallback } from 'react'
 import '../index.css'
 
 interface MenuScreenProps {
@@ -7,25 +6,9 @@ interface MenuScreenProps {
 }
 
 export function MenuScreen({ highScore, onStart }: MenuScreenProps) {
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault()
-        onStart()
-      }
-    },
-    [onStart]
-  )
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
-
   return (
     <div
-      className="absolute inset-0 flex flex-col items-center justify-center"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      className="absolute inset-0 flex flex-col items-center justify-center bg-black/50"
       onClick={onStart}
       onTouchStart={(e) => {
         e.preventDefault()
@@ -34,34 +17,19 @@ export function MenuScreen({ highScore, onStart }: MenuScreenProps) {
       data-testid="menu-screen"
     >
       <h1
-        className="font-mono font-bold text-center select-none"
-        style={{
-          fontSize: '36px',
-          color: '#ffffff',
-          textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000',
-          marginBottom: '20px',
-        }}
+        className="font-mono font-bold text-center select-none text-[36px] text-white mb-[20px] [text-shadow:-2px_-2px_0_#000,2px_-2px_0_#000,-2px_2px_0_#000,2px_2px_0_#000]"
         data-testid="menu-title"
       >
         FLAPPY BIRD
       </h1>
       <p
-        className="font-mono text-center select-none"
-        style={{
-          fontSize: '18px',
-          color: '#ffffff',
-          marginBottom: '30px',
-        }}
+        className="font-mono text-center select-none text-[18px] text-white mb-[30px]"
         data-testid="menu-instruction"
       >
         Tap or Space to Start
       </p>
       <div
-        className="font-mono text-center select-none"
-        style={{
-          fontSize: '20px',
-          color: '#ffd700',
-        }}
+        className="font-mono text-center select-none text-[20px] text-[#ffd700]"
         data-testid="menu-highscore"
       >
         High Score: {highScore}
@@ -69,5 +37,3 @@ export function MenuScreen({ highScore, onStart }: MenuScreenProps) {
     </div>
   )
 }
-
-export default MenuScreen
