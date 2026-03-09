@@ -182,7 +182,7 @@ describe('Input Controls Module (US-011)', () => {
     const { getByTestId } = render(<App />)
     const canvas = getByTestId('game-canvas') as HTMLCanvasElement
     
-    expect(canvas.width).toBe(400)
-    expect(canvas.height).toBe(600)
+    expect(canvas.width).toBe(288)
+    expect(canvas.height).toBe(512)
   })
 })

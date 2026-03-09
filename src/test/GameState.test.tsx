@@ -79,7 +79,7 @@ describe('Game State Management (US-008)', () => {
       // Initial render should show menu (start screen)
       // The menu overlay is drawn with semi-transparent black
       await waitFor(() => {
-        expect(mockFillRect).toHaveBeenCalledWith(0, 0, 400, 600)
+        expect(mockFillRect).toHaveBeenCalledWith(0, 0, 288, 512)
       })
     })
 
@@ -171,34 +171,19 @@ describe('Game State Management (US-008)', () => {
 
   describe('Menu State', () => {
     it('should display FLAPPY BIRD title in menu', async () => {
-      render(<App />)
+      const { getByTestId } = render(<App />)
       
-      await waitFor(() => {
-        expect(mockFillText).toHaveBeenCalled()
-      })
-
-      // Check for title text in menu
-      const textCalls = mockFillText.mock.calls
-      const hasTitle = textCalls.some((call: unknown[]) => 
-        String(call[0]).includes('FLAPPY BIRD')
-      )
-      expect(hasTitle).toBe(true)
+      // Menu title is rendered via MenuScreen component, not canvas
+      const menuTitle = getByTestId('menu-title')
+      expect(menuTitle).toHaveTextContent('FLAPPY BIRD')
     })
 
     it('should display instructions in menu', async () => {
-      render(<App />)
+      const { getByTestId } = render(<App />)
       
-      await waitFor(() => {
-        expect(mockFillText).toHaveBeenCalled()
-      })
-
-      // Check for instruction text
-      const textCalls = mockFillText.mock.calls
-      const hasInstruction = textCalls.some((call: unknown[]) => {
-        const text = String(call[0])
-        return text.includes('Click') || text.includes('Space')
-      })
-      expect(hasInstruction).toBe(true)
+      // Menu instruction is rendered via MenuScreen component, not canvas
+      const menuInstruction = getByTestId('menu-instruction')
+      expect(menuInstruction).toHaveTextContent(/Tap|Click|Space/)
     })
   })
 

@@ -1,20 +1,24 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import './index.css'
 import { MenuScreen, GameOverScreen } from './components'
+import {
+  GAME_WIDTH,
+  GAME_HEIGHT,
+  PIPE_WIDTH,
+  PIPE_GAP,
+  PIPE_SPEED,
+  MIN_PIPE_HEIGHT,
+} from './pipeSystem'
 
-const GAME_WIDTH = 400
-const GAME_HEIGHT = 600
 const GROUND_Y = 400
 const GROUND_HEIGHT = GAME_HEIGHT - GROUND_Y
-const BIRD_SIZE = 30
-const PIPE_WIDTH = 60
-const PIPE_GAP = 150
-const GRAVITY = 0.5
-const JUMP_STRENGTH = -8
-const PIPE_SPEED = 3
+const BIRD_SIZE = 24
+const GRAVITY = 0.25
+const JUMP_STRENGTH = -4.5
 const CLOUD_SPEED = 0.5
+const PIPE_SPAWN_INTERVAL = 120
 
-type GameStateType = 'menu' | 'playing' | 'gameOver'
+ type GameStateType = 'menu' | 'playing' | 'gameOver'
 
 interface Cloud {
   x: number
@@ -48,16 +52,23 @@ function createCloud(x?: number): Cloud {
   }
 }
 
+function generateInitialClouds(): Cloud[] {
+  return Array.from({ length: 3 }, (_, i) =>
+    createCloud(50 + i * 100 + Math.random() * 50)
+  )
+}
+
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>()
+  const frameCountRef = useRef(0)
   const [state, setState] = useState<GameState>(() => {
     const saved = localStorage.getItem('flappyHighScore')
     return {
       birdY: GAME_HEIGHT / 2,
       birdVelocity: 0,
       pipes: [],
-      clouds: [createCloud(50), createCloud(150), createCloud(280)],
+      clouds: generateInitialClouds(),
       score: 0,
       highScore: saved ? parseInt(saved, 10) : 0,
       gameState: 'menu',
@@ -104,8 +115,6 @@ function App() {
     // Disable smoothing for pixel art look
     ctx.imageSmoothingEnabled = false
 
-    let frameCount = 0
-
     const gameLoop = () => {
       setState(prevState => {
         if (prevState.gameState === 'gameOver') return prevState
@@ -118,11 +127,10 @@ function App() {
           newState.birdY += newState.birdVelocity
 
           // Generate pipes
-          frameCount++
-          if (frameCount % 100 === 0) {
-            const minHeight = 50
-            const maxHeight = GROUND_Y - PIPE_GAP - minHeight
-            const topHeight = Math.floor(Math.random() * (maxHeight - minHeight) + minHeight)
+          frameCountRef.current++
+          if (frameCountRef.current % PIPE_SPAWN_INTERVAL === 0) {
+            const maxHeight = GROUND_Y - PIPE_GAP - MIN_PIPE_HEIGHT
+            const topHeight = Math.floor(Math.random() * (maxHeight - MIN_PIPE_HEIGHT) + MIN_PIPE_HEIGHT)
             newState.pipes = [...newState.pipes, { x: GAME_WIDTH, topHeight, passed: false }]
           }
 
@@ -131,13 +139,17 @@ function App() {
             .map(pipe => ({ ...pipe, x: pipe.x - PIPE_SPEED }))
             .filter(pipe => pipe.x + PIPE_WIDTH > 0)
 
-          // Move clouds
-          newState.clouds = newState.clouds
-            .map(cloud => ({ ...cloud, x: cloud.x - CLOUD_SPEED }))
-            .filter(cloud => cloud.x + cloud.size > 0)
+          // Move clouds (combined single map operation)
+          newState.clouds = newState.clouds.map(cloud => {
+            let newX = cloud.x - CLOUD_SPEED
+            if (newX < -cloud.size * 2) {
+              newX = GAME_WIDTH + cloud.size
+            }
+            return { ...cloud, x: newX }
+          }).filter(cloud => cloud.x + cloud.size > 0)
 
           // Add new cloud occasionally
-          if (frameCount % 300 === 0) {
+          if (frameCountRef.current % 300 === 0) {
             newState.clouds = [...newState.clouds, createCloud(GAME_WIDTH + 50)]
           }
 
@@ -216,18 +228,24 @@ function App() {
     ctx.fillStyle = '#4EC0CA'
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
 
-    // Draw clouds - white circles at 30% opacity
+    // Draw clouds - white circles at 30% opacity (data-driven approach)
     for (const cloud of state.clouds) {
       ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`
-      // Draw cloud as multiple overlapping circles for fluffy look
-      const circles = [
-        { dx: 0, dy: 0, r: cloud.size * 0.6 },
-        { dx: cloud.size * 0.4, dy: -cloud.size * 0.1, r: cloud.size * 0.5 },
-        { dx: -cloud.size * 0.3, dy: cloud.size * 0.1, r: cloud.size * 0.4 },
+      const cloudParts = [
+        { dx: 0, dy: 0, scale: 0.5 },
+        { dx: 0.3, dy: -0.2, scale: 0.4 },
+        { dx: -0.3, dy: -0.1, scale: 0.35 },
+        { dx: 0.1, dy: 0.1, scale: 0.3 },
       ]
-      for (const circle of circles) {
+      for (const part of cloudParts) {
         ctx.beginPath()
-        ctx.arc(cloud.x + circle.dx, cloud.y + circle.dy, circle.r, 0, Math.PI * 2)
+        ctx.arc(
+          cloud.x + cloud.size * part.dx,
+          cloud.y + cloud.size * part.dy,
+          cloud.size * part.scale,
+          0,
+          Math.PI * 2
+        )
         ctx.fill()
       }
     }
@@ -328,6 +346,7 @@ function App() {
             onTouchMove={handleTouchDefault}
             onTouchEnd={handleTouchDefault}
             className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none image-pixelated"
+            style={{ imageRendering: 'pixelated' }}
             data-testid="game-canvas"
           />
           {state.gameState === 'menu' && (
@@ -343,7 +362,7 @@ function App() {
         <div className="mt-4 text-gray-400 text-sm">
           <p>
             High Score:{' '}
-            <span className="text-yellow-400 font-bold">{state.highScore}</span>
+            <span className="text-retro-gold font-bold">{state.highScore}</span>
           </p>
           <p className="mt-2">Click or Space to fly</p>
         </div>
