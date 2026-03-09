@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import './index.css'
-import { MenuScreen } from './components/MenuScreen'
+import { MenuScreen, GameOverScreen } from './components'
 
 const GAME_WIDTH = 400
 const GAME_HEIGHT = 600
@@ -290,21 +290,6 @@ function App() {
     ctx.strokeText(state.score.toString(), GAME_WIDTH / 2, 50)
     ctx.fillText(state.score.toString(), GAME_WIDTH / 2, 50)
     ctx.textAlign = 'left'
-
-    // Draw game over screen
-    if (state.gameState === 'gameOver') {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
-      ctx.fillStyle = '#fff'
-      ctx.font = 'bold 32px monospace'
-      ctx.textAlign = 'center'
-      ctx.fillText('GAME OVER', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 50)
-      ctx.font = '20px monospace'
-      ctx.fillText(`Score: ${state.score}`, GAME_WIDTH / 2, GAME_HEIGHT / 2)
-      ctx.fillText(`High Score: ${state.highScore}`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30)
-      ctx.fillText('Click to restart', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 80)
-      ctx.textAlign = 'left'
-    }
   }, [state])
 
   // Handle keyboard input
@@ -335,10 +320,17 @@ function App() {
               jump()
             }}
             className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none image-pixelated"
+            data-testid="game-canvas"
           />
           {state.gameState === 'menu' && (
             <MenuScreen highScore={state.highScore} onStart={startGame} />
           )}
+          <GameOverScreen
+            score={state.score}
+            highScore={state.highScore}
+            onRestart={resetGame}
+            isVisible={state.gameState === 'gameOver'}
+          />
         </div>
         <div className="mt-4 text-gray-400 text-sm">
           <p>

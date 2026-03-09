@@ -21,3 +21,18 @@ DEPENDENCIES ADDED:
 - @testing-library/react
 - @testing-library/jest-dom
 - jsdom
+
+=== US-011: Input controls module ===
+COMPLETED: 2026-03-09T03:13:00+03:00
+FILES CHANGED:
+- src/App.tsx (enhanced with touch handlers and data-testid)
+- src/test/InputControls.test.tsx (15 comprehensive input tests)
+- eslint.config.cjs (added TouchEvent global)
+
+KEY DECISIONS:
+- Added touch-action: none inline style for mobile scroll prevention
+- Added onTouchMove and onTouchEnd handlers with preventDefault
+- Used data-testid for reliable test targeting
+- Comprehensive test coverage for all input methods (keyboard, mouse, touch)
+
+DEPENDENCIES ADDED: None
