@@ -56,7 +56,8 @@ HTMLCanvasElement.prototype.getContext = vi.fn((contextId: string) => {
 
 // Mock requestAnimationFrame
 let rafIdCounter = 0
-const mockRequestAnimationFrame = vi.fn((cb: (time: number) => void) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const mockRequestAnimationFrame = vi.fn((_cb: (time: number) => void) => {
   return ++rafIdCounter
 })
 const mockCancelAnimationFrame = vi.fn()
