@@ -53,11 +53,17 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
 
 // Mock requestAnimationFrame
 const mockRequestAnimationFrame = vi.fn((_cb: (time: number) => void) => {
-  return window.setTimeout(() => _cb(window.performance.now()), 16)
+  return window.setTimeout(() => _cb(Date.now()), 16)
 })
 const mockCancelAnimationFrame = vi.fn()
-window.requestAnimationFrame = mockRequestAnimationFrame
-window.cancelAnimationFrame = mockCancelAnimationFrame
+Object.defineProperty(window, 'requestAnimationFrame', {
+  value: mockRequestAnimationFrame,
+  writable: true,
+})
+Object.defineProperty(window, 'cancelAnimationFrame', {
+  value: mockCancelAnimationFrame,
+  writable: true,
+})
 
 describe('Background and Visual Effects (US-012)', () => {
   beforeEach(() => {
