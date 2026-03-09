@@ -58,8 +58,8 @@ export function GameCanvas({
     ctx.imageSmoothingEnabled = false
 
     const gameLoop = (timestamp: number) => {
-      // Calculate delta time in milliseconds
-      const deltaTime = lastTimeRef.current ? timestamp - lastTimeRef.current : 16.67
+      // Calculate delta time in milliseconds, cap at 100ms to prevent large jumps
+      const deltaTime = Math.min(100, lastTimeRef.current ? timestamp - lastTimeRef.current : 16.67)
       lastTimeRef.current = timestamp
 
       // Call update callback if provided and game is running
