@@ -1,6 +1,23 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Inject design tokens CSS variables into document
+document.documentElement.style.cssText = `
+  --color-sky-cyan: #4EC0CA;
+  --color-sky-gradient: #70c5ce;
+  --color-sky-light: #a8e6cf;
+  --color-bird-yellow: #F4D03F;
+  --color-bird-dark: #d4ac0d;
+  --color-bird-beak: #E67E22;
+  --color-pipe-green: #73BF2E;
+  --color-pipe-green-dark: #558B2F;
+  --color-sand-ground: #DED895;
+  --color-sand-dark: #d4c76a;
+  --font-mono: "Courier New", "Lucida Console", Monaco, monospace;
+  --pixel-size: 4px;
+  --image-rendering: pixelated;
+`
+
 // Canvas mock for testing
 class MockCanvasContext {
   fillStyle = ''

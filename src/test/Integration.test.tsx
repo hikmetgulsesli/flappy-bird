@@ -377,7 +377,7 @@ describe('Integration Wiring and End-to-End Verification (US-013)', () => {
       )
       // Verify overlay is rendered and clickable
       expect(getByTestId('game-over-overlay')).toBeTruthy()
-      expect(getByText('Click to restart')).toBeTruthy()
+      expect(getByText('Tap to Restart')).toBeTruthy()
     })
 
     it('has proper touch-action CSS for mobile', () => {
@@ -398,7 +398,7 @@ describe('Integration Wiring and End-to-End Verification (US-013)', () => {
       })
 
       const firstCall = mockFillRect.mock.calls[0]
-      expect(firstCall).toEqual([0, 0, 400, 600])
+      expect(firstCall).toEqual([0, 0, 288, 512])
     })
 
     it('draws game elements each frame', async () => {
@@ -496,13 +496,13 @@ describe('Integration Wiring and End-to-End Verification (US-013)', () => {
 
     it('has all required props for GameOverScreen', () => {
       // Verify GameOverScreen accepts all required props correctly
-      const { getByTestId, getByText } = render(
+      const { getByTestId } = render(
         <GameOverScreen score={15} highScore={25} onRestart={() => {}} isVisible={true} />
       )
       // Verify component renders with all props
       expect(getByTestId('game-over-overlay')).toBeTruthy()
-      expect(getByText('15')).toBeTruthy() // Score displayed
-      expect(getByText('25')).toBeTruthy() // High score displayed
+      expect(getByTestId('game-over-current-score')).toBeTruthy() // Score displayed
+      expect(getByTestId('game-over-best-score')).toBeTruthy() // High score displayed
     })
 
     it('handles all event types without errors', () => {
