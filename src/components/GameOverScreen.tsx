@@ -1,90 +1,50 @@
-import React from 'react'
+import React, { useCallback } from 'react'
+import './GameOverScreen.css'
 
 interface GameOverScreenProps {
   score: number
   highScore: number
   onRestart: () => void
+  isVisible: boolean
 }
 
-export const GameOverScreen: React.FC<GameOverScreenProps> = ({ 
-  score, 
-  highScore, 
-  onRestart 
-}) => {
-  const isNewHighScore = score > 0 && score >= highScore
+export function GameOverScreen({ score, highScore, onRestart, isVisible }: GameOverScreenProps) {
+  const handleClick = useCallback(() => {
+    onRestart()
+  }, [onRestart])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault()
+      onRestart()
+    }
+  }, [onRestart])
+
+  if (!isVisible) return null
 
   return (
-    <div 
-      className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 cursor-pointer"
-      onClick={onRestart}
+    <div
+      className="game-over-overlay"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Game Over"
+      tabIndex={0}
       data-testid="game-over-overlay"
     >
-      <h2 
-        className="text-3xl font-bold mb-6"
-        style={{ 
-          fontFamily: 'var(--font-mono)',
-          color: isNewHighScore ? 'var(--color-gold)' : 'var(--color-text-primary)',
-          textShadow: '2px 2px 0 #000',
-        }}
-      >
-        {isNewHighScore ? 'NEW HIGH SCORE!' : 'GAME OVER'}
-      </h2>
-      
-      <div className="bg-black/50 p-6 rounded-lg mb-6">
-        <div className="text-center mb-4">
-          <span 
-            className="text-lg block mb-1"
-            style={{ 
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--color-text-primary)',
-            }}
-          >
-            Score
-          </span>
-          <span 
-            className="text-4xl font-bold"
-            style={{ 
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--color-text-primary)',
-            }}
-          >
-            {score}
-          </span>
-        </div>
-        
-        <div className="text-center">
-          <span 
-            className="text-lg block mb-1"
-            style={{ 
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--color-gold)',
-            }}
-          >
-            High Score
-          </span>
-          <span 
-            className="text-3xl font-bold"
-            style={{ 
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--color-gold)',
-            }}
-          >
-            {highScore}
-          </span>
-        </div>
+      <div className="game-over-box" data-testid="game-over-box">
+        <h2 className="game-over-title" data-testid="game-over-title">GAME OVER</h2>
+        <p className="game-over-score" data-testid="game-over-current-score">
+          Score: {score}
+        </p>
+        <p className="game-over-score" data-testid="game-over-best-score">
+          Best: {highScore}
+        </p>
+        <p className="game-over-restart" data-testid="game-over-restart">
+          Tap to Restart
+        </p>
       </div>
-
-      <p 
-        className="text-base animate-pulse"
-        style={{ 
-          fontFamily: 'var(--font-mono)',
-          color: 'var(--color-text-primary)',
-        }}
-      >
-        Click to restart
-      </p>
     </div>
   )
 }
-
-export default GameOverScreen

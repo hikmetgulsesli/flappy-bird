@@ -1,38 +1,52 @@
-import React, { useEffect, useRef, useCallback } from 'react'
-import type { GameState, Cloud } from '../hooks/useGameState'
-import {
-  GAME_WIDTH,
-  GAME_HEIGHT,
-  GROUND_Y,
-  BIRD_SIZE,
-  PIPE_WIDTH,
-} from '../collisionSystem'
+import { useEffect, useRef, useCallback } from 'react'
 
-interface GameCanvasProps {
-  state: GameState
-  onJump: () => void
+export interface GameCanvasProps {
+  /** Canvas width in pixels (default: 288) */
+  width?: number
+  /** Canvas height in pixels (default: 512) */
+  height?: number
+  /** Game update callback - called before each render */
+  onUpdate?: (deltaTime: number) => void
+  /** Game render callback - use this to draw on canvas */
+  onRender?: (ctx: CanvasRenderingContext2D, width: number, height: number) => void
+  /** Click/tap handler */
+  onAction?: () => void
+  /** CSS class names */
+  className?: string
+  /** Whether the game loop is active */
+  isRunning?: boolean
 }
 
-const PIPE_GAP = 150
-
-function drawCloud(ctx: CanvasRenderingContext2D, cloud: Cloud): void {
-  ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`
-  const circles = [
-    { dx: 0, dy: 0, r: cloud.size * 0.6 },
-    { dx: cloud.size * 0.4, dy: -cloud.size * 0.1, r: cloud.size * 0.5 },
-    { dx: -cloud.size * 0.3, dy: cloud.size * 0.1, r: cloud.size * 0.4 },
-  ]
-  for (const circle of circles) {
-    ctx.beginPath()
-    ctx.arc(cloud.x + circle.dx, cloud.y + circle.dy, circle.r, 0, Math.PI * 2)
-    ctx.fill()
-  }
-}
-
-export const GameCanvas: React.FC<GameCanvasProps> = ({ state, onJump }) => {
+/**
+ * GameCanvas - Core Canvas-based game engine component
+ * 
+ * Features:
+ * - Fixed 288x512px game resolution (configurable)
+ * - 60fps requestAnimationFrame game loop
+ * - 2D rendering context with pixelated rendering
+ * - Automatic cleanup on unmount
+ * - TypeScript type safety throughout
+ */
+export function GameCanvas({
+  width = 288,
+  height = 512,
+  onUpdate,
+  onRender,
+  onAction,
+  className = '',
+  isRunning = true,
+}: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animationRef = useRef<number | null>(null)
+  const lastTimeRef = useRef<number>(0)
+  const isRunningRef = useRef(isRunning)
 
-  // Draw game
+  // Keep ref in sync with prop
+  useEffect(() => {
+    isRunningRef.current = isRunning
+  }, [isRunning])
+
+  // Game loop
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -43,97 +57,57 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ state, onJump }) => {
     // Disable smoothing for pixel art look
     ctx.imageSmoothingEnabled = false
 
-    // Draw sky - cyan background
-    ctx.fillStyle = 'var(--color-sky-cyan)'
-    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT)
+    const gameLoop = (timestamp: number) => {
+      // Calculate delta time in milliseconds, cap at 100ms to prevent large jumps
+      const deltaTime = Math.min(100, lastTimeRef.current ? timestamp - lastTimeRef.current : 16.67)
+      lastTimeRef.current = timestamp
 
-    // Draw clouds
-    for (const cloud of state.clouds) {
-      drawCloud(ctx, cloud)
+      // Call update callback if provided and game is running
+      if (isRunningRef.current && onUpdate) {
+        onUpdate(deltaTime)
+      }
+
+      // Call render callback if provided
+      if (onRender) {
+        onRender(ctx, width, height)
+      }
+
+      // Schedule next frame
+      animationRef.current = requestAnimationFrame(gameLoop)
     }
 
-    // Draw ground
-    const groundHeight = GAME_HEIGHT - GROUND_Y
-    ctx.fillStyle = 'var(--color-sand-ground)'
-    ctx.fillRect(0, GROUND_Y, GAME_WIDTH, groundHeight)
+    // Start the game loop
+    animationRef.current = requestAnimationFrame(gameLoop)
 
-    // Draw grass detail line on ground
-    ctx.fillStyle = 'var(--color-pipe-green)'
-    ctx.fillRect(0, GROUND_Y, GAME_WIDTH, 12)
-    // Grass texture - pixelated stripes
-    ctx.fillStyle = 'var(--color-pipe-green-dark)'
-    for (let i = 0; i < GAME_WIDTH; i += 20) {
-      ctx.fillRect(i, GROUND_Y, 4, 12)
-      ctx.fillRect(i + 10, GROUND_Y + 4, 4, 8)
+    // Cleanup on unmount
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = null
+      }
     }
-    // Ground top border line
-    ctx.fillStyle = 'var(--color-ground-border)'
-    ctx.fillRect(0, GROUND_Y, GAME_WIDTH, 2)
+  }, [onUpdate, onRender, width, height])
 
-    // Draw pipes
-    ctx.fillStyle = 'var(--color-pipe-green)'
-    for (const pipe of state.pipes) {
-      // Top pipe
-      ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight)
-      // Bottom pipe
-      ctx.fillRect(pipe.x, pipe.topHeight + PIPE_GAP, PIPE_WIDTH, GROUND_Y - pipe.topHeight - PIPE_GAP)
-      // Pipe caps
-      ctx.fillStyle = 'var(--color-pipe-green-dark)'
-      ctx.fillRect(pipe.x - 2, pipe.topHeight - 20, PIPE_WIDTH + 4, 20)
-      ctx.fillRect(pipe.x - 2, pipe.topHeight + PIPE_GAP, PIPE_WIDTH + 4, 20)
-      ctx.fillStyle = 'var(--color-pipe-green)'
-    }
+  // Handle canvas interaction
+  const handleClick = useCallback(() => {
+    onAction?.()
+  }, [onAction])
 
-    // Draw bird
-    const birdX = state.bird.x
-    const birdY = state.bird.y
-    
-    ctx.fillStyle = 'var(--color-bird-yellow)'
-    ctx.beginPath()
-    ctx.arc(birdX, birdY, BIRD_SIZE / 2, 0, Math.PI * 2)
-    ctx.fill()
-    
-    // Bird eye
-    ctx.fillStyle = 'var(--color-bird-pupil)'
-    ctx.beginPath()
-    ctx.arc(birdX + 5, birdY - 5, 4, 0, Math.PI * 2)
-    ctx.fill()
-    
-    // Bird beak
-    ctx.fillStyle = 'var(--color-bird-beak)'
-    ctx.beginPath()
-    ctx.moveTo(birdX + 10, birdY)
-    ctx.lineTo(birdX + 20, birdY + 3)
-    ctx.lineTo(birdX + 10, birdY + 6)
-    ctx.fill()
-
-    // Draw score
-    ctx.fillStyle = 'var(--color-text-primary)'
-    ctx.strokeStyle = 'var(--color-text-dark)'
-    ctx.lineWidth = 3
-    ctx.font = 'bold 32px var(--font-mono)'
-    ctx.textAlign = 'center'
-    ctx.strokeText(state.score.toString(), GAME_WIDTH / 2, 50)
-    ctx.fillText(state.score.toString(), GAME_WIDTH / 2, 50)
-    ctx.textAlign = 'left'
-  }, [state])
-
-  // Handle touch
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((e: import('react').TouchEvent) => {
     e.preventDefault()
-    onJump()
-  }, [onJump])
+    onAction?.()
+  }, [onAction])
 
   return (
     <canvas
       ref={canvasRef}
-      width={GAME_WIDTH}
-      height={GAME_HEIGHT}
-      onClick={onJump}
+      width={width}
+      height={height}
+      onClick={handleClick}
       onTouchStart={handleTouchStart}
-      className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none"
-      style={{ imageRendering: 'pixelated' }}
+      className={`cursor-pointer touch-none image-pixelated ${className}`}
       data-testid="game-canvas"
+      aria-label="Game canvas"
     />
   )
 }

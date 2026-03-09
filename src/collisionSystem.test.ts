@@ -169,7 +169,7 @@ describe('Collision System', () => {
     })
 
     it('should detect collision when bird.bottom > pipe.bottom.top', () => {
-      const bird = createBird(240)
+      const bird = createBird(270)
       bird.x = 200
       const pipe = createPipe(188, 100)
       expect(bird.y + BIRD_SIZE / 2).toBeGreaterThan(pipe.topHeight + pipe.gap)

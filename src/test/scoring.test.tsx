@@ -72,14 +72,6 @@ describe('Scoring System with Persistence (US-007)', () => {
       }
       return null
     }) as unknown as typeof HTMLCanvasElement.prototype.getContext
-
-    // Mock requestAnimationFrame
-    vi.stubGlobal('requestAnimationFrame', vi.fn((cb: (time: number) => void) => {
-      return setTimeout(cb, 16) as unknown as number
-    }))
-    vi.stubGlobal('cancelAnimationFrame', vi.fn((id: number) => {
-      clearTimeout(id)
-    }))
   })
 
   afterEach(() => {
@@ -137,10 +129,10 @@ describe('Scoring System with Persistence (US-007)', () => {
     it('should render score at top center position', () => {
       render(<App />)
 
-      // Score should be centered (x ~ 200 for 400px canvas)
+      // Score should be centered (x ~ 144 for 288px canvas)
       const scoreCall = mockFillTextCalls.find(call => call.text === '0')
       if (scoreCall) {
-        expect(scoreCall.x).toBe(200) // GAME_WIDTH / 2
+        expect(scoreCall.x).toBe(144) // GAME_WIDTH / 2
         expect(scoreCall.y).toBe(50) // Top position
       }
     })
@@ -208,8 +200,8 @@ describe('Scoring System with Persistence (US-007)', () => {
       localStorageData['flappyHighScore'] = '999'
       render(<App />)
 
-      expect(screen.getByText(/HIGH SCORE/i)).toBeInTheDocument()
-      expect(screen.getByText('999')).toBeInTheDocument()
+      // Menu screen shows high score - check by testid
+      expect(screen.getByTestId('menu-highscore')).toHaveTextContent('999')
     })
 
     it('should have styled high score display', () => {
@@ -217,7 +209,7 @@ describe('Scoring System with Persistence (US-007)', () => {
       render(<App />)
 
       const highScoreElement = screen.getByText('50')
-      expect(highScoreElement).toHaveClass('text-yellow-400', 'font-bold')
+      expect(highScoreElement).toHaveClass('text-retro-gold', 'font-bold')
     })
   })
 
@@ -290,8 +282,8 @@ describe('Scoring System with Persistence (US-007)', () => {
       render(<App />)
 
       const canvas = document.querySelector('canvas')
-      expect(canvas).toHaveAttribute('width', '400')
-      expect(canvas).toHaveAttribute('height', '600')
+      expect(canvas).toHaveAttribute('width', '288')
+      expect(canvas).toHaveAttribute('height', '512')
     })
   })
 })
