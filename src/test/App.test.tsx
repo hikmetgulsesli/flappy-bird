@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent, waitFor } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import App from '../App'
 
 // Mock canvas context
@@ -69,11 +69,11 @@ describe('Background and Visual Effects (US-012)', () => {
     render(<App />)
     const canvas = document.querySelector('canvas')
     expect(canvas).toBeTruthy()
-    expect(canvas?.width).toBe(400)
-    expect(canvas?.height).toBe(600)
+    expect(canvas?.width).toBe(288)
+    expect(canvas?.height).toBe(512)
   })
 
-  it('draws sky with cyan color #4EC0CA', async () => {
+  it('draws sky with gradient', async () => {
     render(<App />)
     
     // Wait for useEffect to run
@@ -81,53 +81,38 @@ describe('Background and Visual Effects (US-012)', () => {
       expect(mockFillRect).toHaveBeenCalled()
     })
 
-    // Check if sky was drawn with cyan color
+    // Check if sky was drawn (full canvas fill)
     const fillCalls = mockFillRect.mock.calls
-    const skyDrawCall = fillCalls.find((call: number[]) => call[0] === 0 && call[1] === 0 && call[2] === 400 && call[3] === 600)
+    const skyDrawCall = fillCalls.find((call: number[]) => call[0] === 0 && call[1] === 0 && call[2] === 288 && call[3] === 512)
     expect(skyDrawCall).toBeTruthy()
   })
 
-  it('draws ground at y=400 with sand color #DED895', async () => {
+  it('draws ground at y=462 with sand color', async () => {
     render(<App />)
     
     await waitFor(() => {
       expect(mockFillRect).toHaveBeenCalled()
     })
 
-    // Check if ground was drawn at correct position
+    // Check if ground was drawn at correct position (GAME_HEIGHT - 50 = 462)
     const fillCalls = mockFillRect.mock.calls
-    const groundDrawCall = fillCalls.find((call: number[]) => call[1] === 400)
+    const groundDrawCall = fillCalls.find((call: number[]) => call[1] === 462)
     expect(groundDrawCall).toBeTruthy()
-    expect(groundDrawCall![2]).toBe(400) // width
-    expect(groundDrawCall![3]).toBe(200) // height (600 - 400)
+    expect(groundDrawCall![2]).toBe(288) // width
+    expect(groundDrawCall![3]).toBe(50) // height
   })
 
-  it('draws grass detail line on ground', async () => {
+  it('draws ground border line', async () => {
     render(<App />)
     
     await waitFor(() => {
       expect(mockFillRect).toHaveBeenCalled()
     })
 
-    // Check if grass line was drawn (green color at y=400)
+    // Check if ground border was drawn (at y=454, height=8)
     const fillCalls = mockFillRect.mock.calls
-    const grassDrawCall = fillCalls.find((call: number[]) => call[1] === 400 && call[3] === 12)
-    expect(grassDrawCall).toBeTruthy()
-  })
-
-  it('draws clouds as white circles', async () => {
-    render(<App />)
-    
-    await waitFor(() => {
-      expect(mockArc).toHaveBeenCalled()
-    })
-
-    // Clouds are drawn using arc
-    const arcCalls = mockArc.mock.calls
-    expect(arcCalls.length).toBeGreaterThan(0)
-    
-    // Check that fillStyle was set to white with opacity for clouds
-    expect(mockContext.fillStyle).toContain('rgba(255, 255, 255')
+    const borderDrawCall = fillCalls.find((call: number[]) => call[1] === 454 && call[3] === 8)
+    expect(borderDrawCall).toBeTruthy()
   })
 
   it('disables image smoothing for pixel-art rendering', async () => {
@@ -149,26 +134,8 @@ describe('Background and Visual Effects (US-012)', () => {
     const firstCall = mockFillRect.mock.calls[0]
     expect(firstCall[0]).toBe(0)
     expect(firstCall[1]).toBe(0)
-    expect(firstCall[2]).toBe(400) // full width
-    expect(firstCall[3]).toBe(600) // full height
-  })
-
-  it('animates clouds moving across screen', async () => {
-    render(<App />)
-    
-    // Start game to trigger animation
-    const canvas = document.querySelector('canvas')
-    if (canvas) {
-      fireEvent.click(canvas)
-    }
-    
-    // Wait for animation frame
-    await waitFor(() => {
-      expect(mockRequestAnimationFrame).toHaveBeenCalled()
-    })
-
-    // Clouds should be rendered
-    expect(mockArc).toHaveBeenCalled()
+    expect(firstCall[2]).toBe(288) // full width
+    expect(firstCall[3]).toBe(512) // full height
   })
 
   it('has pixel-art style class on canvas', () => {

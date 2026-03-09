@@ -110,24 +110,63 @@ describe('Scoring System with Persistence (US-007)', () => {
   })
 
   describe('AC2: Score displays as white text with black outline', () => {
-    it('should render score text on canvas', () => {
+    it('should render score text on canvas', async () => {
       render(<App />)
+
+      // Start the game to trigger rendering
+      const canvas = document.querySelector('canvas')
+      if (canvas) {
+        await act(async () => {
+          fireEvent.click(canvas)
+        })
+      }
+
+      // Wait for animation frame to trigger rendering
+      await waitFor(() => {
+        expect(mockFillTextCalls.length).toBeGreaterThan(0)
+      }, { timeout: 100 })
 
       // Check that fillText was called with score '0'
       const scoreCall = mockFillTextCalls.find(call => call.text === '0')
       expect(scoreCall).toBeDefined()
     })
 
-    it('should use strokeText for outline effect', () => {
+    it('should use strokeText for outline effect', async () => {
       render(<App />)
+
+      // Start the game to trigger rendering
+      const canvas = document.querySelector('canvas')
+      if (canvas) {
+        await act(async () => {
+          fireEvent.click(canvas)
+        })
+      }
+
+      // Wait for animation frame to trigger rendering
+      await waitFor(() => {
+        expect(mockStrokeTextCalls.length).toBeGreaterThan(0)
+      }, { timeout: 100 })
 
       // Check that strokeText was called with score '0'
       const strokeCall = mockStrokeTextCalls.find(call => call.text === '0')
       expect(strokeCall).toBeDefined()
     })
 
-    it('should render score at top center position', () => {
+    it('should render score at top center position', async () => {
       render(<App />)
+
+      // Start the game to trigger rendering
+      const canvas = document.querySelector('canvas')
+      if (canvas) {
+        await act(async () => {
+          fireEvent.click(canvas)
+        })
+      }
+
+      // Wait for animation frame
+      await waitFor(() => {
+        expect(mockFillTextCalls.length).toBeGreaterThan(0)
+      }, { timeout: 100 })
 
       // Score should be centered (x ~ 144 for 288px canvas)
       const scoreCall = mockFillTextCalls.find(call => call.text === '0')
@@ -137,8 +176,21 @@ describe('Scoring System with Persistence (US-007)', () => {
       }
     })
 
-    it('should use correct font for retro style', () => {
+    it('should use correct font for retro style', async () => {
       render(<App />)
+
+      // Start the game to trigger rendering
+      const canvas = document.querySelector('canvas')
+      if (canvas) {
+        await act(async () => {
+          fireEvent.click(canvas)
+        })
+      }
+
+      // Wait for animation frame
+      await waitFor(() => {
+        expect(mockFillTextCalls.length).toBeGreaterThan(0)
+      }, { timeout: 100 })
 
       // Font should include Courier New for retro look
       // This is validated through the canvas font property
