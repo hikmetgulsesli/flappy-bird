@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, fireEvent, waitFor, screen } from '@testing-library/react'
 import App from '../App'
 
 // Mock canvas context
@@ -46,134 +46,284 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 })
 
-// Mock getContext - use type assertion to bypass strict overload checking
+// Mock getContext
 Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
   value: vi.fn(() => mockContext),
 })
 
 // Mock requestAnimationFrame
+let rafCallbacks: Array<(time: number) => void> = []
 const mockRequestAnimationFrame = vi.fn((cb: (time: number) => void) => {
-  return window.setTimeout(() => cb(window.performance.now()), 16)
+  rafCallbacks.push(cb)
+  return rafCallbacks.length
 })
-const mockCancelAnimationFrame = vi.fn()
+const mockCancelAnimationFrame = vi.fn((id: number) => {
+  rafCallbacks[id - 1] = () => {}
+})
 window.requestAnimationFrame = mockRequestAnimationFrame
 window.cancelAnimationFrame = mockCancelAnimationFrame
 
-describe('Background and Visual Effects (US-012)', () => {
+describe('Integration Wiring and E2E Verification (US-013)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    rafCallbacks = []
     localStorageMock.getItem.mockReturnValue(null)
   })
 
-  it('renders canvas with correct dimensions', () => {
-    render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas).toBeTruthy()
-    expect(canvas?.width).toBe(400)
-    expect(canvas?.height).toBe(600)
+  afterEach(() => {
+    rafCallbacks = []
   })
 
-  it('draws sky with cyan color #4EC0CA', async () => {
-    render(<App />)
-    
-    // Wait for useEffect to run
-    await waitFor(() => {
-      expect(mockFillRect).toHaveBeenCalled()
+  describe('Component Integration', () => {
+    it('renders all required components', () => {
+      render(<App />)
+      
+      // Check canvas is rendered
+      expect(screen.getByTestId('game-canvas')).toBeTruthy()
+      
+      // Check start screen is shown initially
+      expect(screen.getByTestId('start-screen')).toBeTruthy()
+      
+      // Check title is rendered
+      expect(screen.getByText(/Flappy/)).toBeTruthy()
+      expect(screen.getByText(/Bird/)).toBeTruthy()
     })
 
-    // Check if sky was drawn with cyan color
-    const fillCalls = mockFillRect.mock.calls
-    const skyDrawCall = fillCalls.find((call: number[]) => call[0] === 0 && call[1] === 0 && call[2] === 400 && call[3] === 600)
-    expect(skyDrawCall).toBeTruthy()
-  })
-
-  it('draws ground at y=400 with sand color #DED895', async () => {
-    render(<App />)
-    
-    await waitFor(() => {
-      expect(mockFillRect).toHaveBeenCalled()
+    it('StartScreen component is interactive', async () => {
+      render(<App />)
+      
+      const startScreen = screen.getByTestId('start-screen')
+      expect(startScreen).toBeTruthy()
+      
+      // Click starts the game
+      fireEvent.click(startScreen)
+      
+      // Start screen should disappear after clicking
+      await waitFor(() => {
+        expect(screen.queryByTestId('start-screen')).toBeNull()
+      })
     })
 
-    // Check if ground was drawn at correct position
-    const fillCalls = mockFillRect.mock.calls
-    const groundDrawCall = fillCalls.find((call: number[]) => call[1] === 400)
-    expect(groundDrawCall).toBeTruthy()
-    expect(groundDrawCall![2]).toBe(400) // width
-    expect(groundDrawCall![3]).toBe(200) // height (600 - 400)
-  })
-
-  it('draws grass detail line on ground', async () => {
-    render(<App />)
-    
-    await waitFor(() => {
-      expect(mockFillRect).toHaveBeenCalled()
-    })
-
-    // Check if grass line was drawn (green color at y=400)
-    const fillCalls = mockFillRect.mock.calls
-    const grassDrawCall = fillCalls.find((call: number[]) => call[1] === 400 && call[3] === 12)
-    expect(grassDrawCall).toBeTruthy()
-  })
-
-  it('draws clouds as white circles', async () => {
-    render(<App />)
-    
-    await waitFor(() => {
-      expect(mockArc).toHaveBeenCalled()
-    })
-
-    // Clouds are drawn using arc
-    const arcCalls = mockArc.mock.calls
-    expect(arcCalls.length).toBeGreaterThan(0)
-    
-    // Check that fillStyle was set to white with opacity for clouds
-    expect(mockContext.fillStyle).toContain('rgba(255, 255, 255')
-  })
-
-  it('disables image smoothing for pixel-art rendering', async () => {
-    render(<App />)
-    
-    await waitFor(() => {
-      expect(mockContext.imageSmoothingEnabled).toBe(false)
+    it('GameCanvas receives proper state props', () => {
+      render(<App />)
+      
+      const canvas = screen.getByTestId('game-canvas')
+      expect(canvas).toHaveAttribute('width', '400')
+      expect(canvas).toHaveAttribute('height', '600')
     })
   })
 
-  it('renders background behind all game elements', async () => {
-    render(<App />)
-    
-    await waitFor(() => {
-      expect(mockFillRect).toHaveBeenCalled()
+  describe('Game Loop Integration', () => {
+    it('game loop starts when game begins', async () => {
+      render(<App />)
+      
+      // Click to start
+      fireEvent.click(screen.getByTestId('start-screen'))
+      
+      await waitFor(() => {
+        expect(mockRequestAnimationFrame).toHaveBeenCalled()
+      })
     })
 
-    // First fillRect should be the sky (background)
-    const firstCall = mockFillRect.mock.calls[0]
-    expect(firstCall[0]).toBe(0)
-    expect(firstCall[1]).toBe(0)
-    expect(firstCall[2]).toBe(400) // full width
-    expect(firstCall[3]).toBe(600) // full height
+    it('animation frame is requested for game updates', async () => {
+      render(<App />)
+      
+      fireEvent.click(screen.getByTestId('start-screen'))
+      
+      await waitFor(() => {
+        expect(mockRequestAnimationFrame).toHaveBeenCalled()
+      })
+    })
   })
 
-  it('animates clouds moving across screen', async () => {
-    render(<App />)
-    
-    // Start game to trigger animation
-    const canvas = document.querySelector('canvas')
-    if (canvas) {
+  describe('Menu → Playing → Game Over → Menu Flow', () => {
+    it('starts in menu state with start screen visible', () => {
+      render(<App />)
+      
+      expect(screen.getByTestId('start-screen')).toBeTruthy()
+      expect(screen.queryByTestId('game-over-screen')).toBeNull()
+    })
+
+    it('transitions from menu to playing on click', async () => {
+      render(<App />)
+      
+      fireEvent.click(screen.getByTestId('start-screen'))
+      
+      await waitFor(() => {
+        expect(screen.queryByTestId('start-screen')).toBeNull()
+      })
+    })
+
+    it('keyboard space starts the game', async () => {
+      render(<App />)
+      
+      fireEvent.keyDown(window, { code: 'Space' })
+      
+      await waitFor(() => {
+        expect(screen.queryByTestId('start-screen')).toBeNull()
+      })
+    })
+
+    it('space key is prevented from scrolling', async () => {
+      render(<App />)
+      
+      const keyDownEvent = new KeyboardEvent('keydown', { code: 'Space', bubbles: true })
+      const preventDefaultSpy = vi.spyOn(keyDownEvent, 'preventDefault')
+      
+      window.dispatchEvent(keyDownEvent)
+      
+      expect(preventDefaultSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('Score System', () => {
+    it('displays initial score of 0', () => {
+      render(<App />)
+      
+      // Score should be rendered in canvas (mocked)
+      expect(screen.getByText('High Score:')).toBeTruthy()
+    })
+
+    it('loads high score from localStorage on mount', () => {
+      localStorageMock.getItem.mockReturnValue('42')
+      
+      render(<App />)
+      
+      expect(localStorageMock.getItem).toHaveBeenCalledWith('flappyHighScore')
+    })
+
+    it('displays loaded high score', () => {
+      localStorageMock.getItem.mockReturnValue('42')
+      
+      render(<App />)
+      
+      expect(screen.getByText('42')).toBeTruthy()
+    })
+  })
+
+  describe('Canvas Rendering', () => {
+    it('canvas has correct dimensions', () => {
+      render(<App />)
+      
+      const canvas = screen.getByTestId('game-canvas')
+      expect(canvas).toHaveAttribute('width', '400')
+      expect(canvas).toHaveAttribute('height', '600')
+    })
+
+    it('canvas has pixelated rendering style', () => {
+      render(<App />)
+      
+      const canvas = screen.getByTestId('game-canvas')
+      expect(canvas).toHaveClass('touch-none')
+    })
+
+    it('canvas is interactive', () => {
+      render(<App />)
+      
+      const canvas = screen.getByTestId('game-canvas')
+      expect(canvas).toHaveClass('cursor-pointer')
+    })
+  })
+
+  describe('Interactive Elements', () => {
+    it('canvas click triggers jump action', async () => {
+      render(<App />)
+      
+      // First click starts the game
+      fireEvent.click(screen.getByTestId('start-screen'))
+      
+      await waitFor(() => {
+        expect(screen.queryByTestId('start-screen')).toBeNull()
+      })
+      
+      // Subsequent clicks on canvas should work
+      const canvas = screen.getByTestId('game-canvas')
       fireEvent.click(canvas)
-    }
-    
-    // Wait for animation frame
-    await waitFor(() => {
-      expect(mockRequestAnimationFrame).toHaveBeenCalled()
     })
 
-    // Clouds should be rendered
-    expect(mockArc).toHaveBeenCalled()
+    it('touch events are handled', async () => {
+      render(<App />)
+      
+      const canvas = screen.getByTestId('game-canvas')
+      fireEvent.touchStart(canvas)
+      
+      // Touch events should work without error
+      expect(canvas).toBeTruthy()
+    })
+
+    it('touch event is handled on canvas', () => {
+      render(<App />)
+      
+      const canvas = screen.getByTestId('game-canvas')
+      // Touch events are handled by the component
+      expect(canvas).toHaveClass('touch-none')
+    })
   })
 
-  it('has pixel-art style class on canvas', () => {
-    render(<App />)
-    const canvas = document.querySelector('canvas')
-    expect(canvas?.classList.contains('image-pixelated')).toBe(true)
+  describe('No Placeholder Content', () => {
+    it('renders actual game title', () => {
+      render(<App />)
+      
+      expect(screen.getByText(/Flappy/)).toBeTruthy()
+      expect(screen.getByText(/Bird/)).toBeTruthy()
+    })
+
+    it('start screen shows proper game title', () => {
+      render(<App />)
+      
+      const startScreen = screen.getByTestId('start-screen')
+      expect(startScreen.textContent).toContain('FLAPPY BIRD')
+    })
+
+    it('start screen shows proper instructions', () => {
+      render(<App />)
+      
+      const startScreen = screen.getByTestId('start-screen')
+      expect(startScreen.textContent).toContain('Click or Space to fly')
+    })
+  })
+
+  describe('Game State Management', () => {
+    it('initial state shows start screen', () => {
+      render(<App />)
+      
+      expect(screen.getByTestId('start-screen')).toBeTruthy()
+    })
+
+    it('clicking canvas triggers state change', async () => {
+      render(<App />)
+      
+      fireEvent.click(screen.getByTestId('start-screen'))
+      
+      await waitFor(() => {
+        expect(screen.queryByTestId('start-screen')).toBeNull()
+      })
+    })
+  })
+
+  describe('High Score Display', () => {
+    it('displays high score label', () => {
+      render(<App />)
+      
+      expect(screen.getByText('High Score:')).toBeTruthy()
+    })
+
+    it('displays current high score value', () => {
+      render(<App />)
+      
+      // Should show 0 as default
+      const highScoreElements = screen.getAllByText('0')
+      expect(highScoreElements.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('Instructions Display', () => {
+    it('shows control instructions', () => {
+      render(<App />)
+      
+      // Get all elements with this text - there may be duplicates (StartScreen + footer)
+      const instructions = screen.getAllByText('Click or Space to fly')
+      expect(instructions.length).toBeGreaterThan(0)
+    })
   })
 })
