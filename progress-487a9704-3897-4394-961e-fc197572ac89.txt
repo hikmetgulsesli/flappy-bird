@@ -1,24 +1,23 @@
-=== US-012: Background and visual effects ===
-COMPLETED: 2026-03-09T02:24:00+03:00
+=== US-001: Flappy Bird game implementation ===
+COMPLETED: 2026-03-09T01:47:00+03:00
 FILES CHANGED:
-- src/App.tsx (updated - added sky background, clouds, ground with grass details, pixel-art rendering)
-- src/App.test.tsx (new - 4 unit tests for background rendering)
-- src/test/setup.ts (new - vitest test setup with canvas mocks)
-- vitest.config.ts (new - vitest configuration)
-- package.json (updated - test script uses vitest)
-- package-lock.json (updated - added vitest, testing-library dependencies)
+- src/App.tsx (enhanced with full game implementation)
+- src/index.css (pixel-art styling)
+- src/test/App.test.tsx (14 tests added)
+- src/test/setup.ts (test setup)
+- vitest.config.ts (vitest config)
+- eslint.config.cjs (globals added)
+- package.json (test scripts updated)
 
 KEY DECISIONS:
-- Changed canvas dimensions to 288x512px to match classic Flappy Bird ratio
-- Sky height is 400px (SKY_HEIGHT), ground starts at y=400 with height 112px
-- Clouds use overlapping white circles at 30% opacity for fluffy appearance
-- Implemented parallax scrolling for clouds with varying speeds
-- Disabled canvas imageSmoothingEnabled for crisp pixel-art style
-- Added canvas style image-rendering: pixelated for CSS-level crispness
-- Ground has sand color (#DED895) with grass line (#73BF2E) and texture details
+- Used requestAnimationFrame for smooth game loop
+- Implemented particle-based death animation
+- Pixel-art rendering with image-rendering: pixelated
+- localStorage for high score persistence
+- Comprehensive test suite with Vitest + React Testing Library
 
 DEPENDENCIES ADDED:
-- vitest (v4.0.18) - test runner
-- @testing-library/react - React component testing
-- @testing-library/jest-dom - DOM assertions
-- jsdom - browser environment for tests
+- vitest
+- @testing-library/react
+- @testing-library/jest-dom
+- jsdom

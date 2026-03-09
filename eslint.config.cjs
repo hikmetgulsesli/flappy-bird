@@ -23,6 +23,8 @@ module.exports = [
         localStorage: 'readonly',
         HTMLCanvasElement: 'readonly',
         KeyboardEvent: 'readonly',
+        CanvasRenderingContext2D: 'readonly',
+        getComputedStyle: 'readonly',
       },
     },
     plugins: {
