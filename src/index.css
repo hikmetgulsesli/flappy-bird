@@ -27,3 +27,8 @@
   background: var(--color-bird-yellow);
   color: var(--color-text-dark);
 }
+
+/* Retro gold text color utility */
+.text-retro-gold {
+  color: var(--color-gold);
+}

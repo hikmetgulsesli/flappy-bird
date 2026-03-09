@@ -69,8 +69,8 @@ describe('Background and Visual Effects (US-012)', () => {
     render(<App />)
     const canvas = document.querySelector('canvas')
     expect(canvas).toBeTruthy()
-    expect(canvas?.width).toBe(400)
-    expect(canvas?.height).toBe(600)
+    expect(canvas?.width).toBe(288)
+    expect(canvas?.height).toBe(512)
   })
 
   it('draws sky with cyan color #4EC0CA', async () => {
@@ -83,7 +83,7 @@ describe('Background and Visual Effects (US-012)', () => {
 
     // Check if sky was drawn with cyan color
     const fillCalls = mockFillRect.mock.calls
-    const skyDrawCall = fillCalls.find((call: number[]) => call[0] === 0 && call[1] === 0 && call[2] === 400 && call[3] === 600)
+    const skyDrawCall = fillCalls.find((call: number[]) => call[0] === 0 && call[1] === 0 && call[2] === 288 && call[3] === 512)
     expect(skyDrawCall).toBeTruthy()
   })
 
@@ -98,8 +98,8 @@ describe('Background and Visual Effects (US-012)', () => {
     const fillCalls = mockFillRect.mock.calls
     const groundDrawCall = fillCalls.find((call: number[]) => call[1] === 400)
     expect(groundDrawCall).toBeTruthy()
-    expect(groundDrawCall![2]).toBe(400) // width
-    expect(groundDrawCall![3]).toBe(200) // height (600 - 400)
+    expect(groundDrawCall![2]).toBe(288) // width
+    expect(groundDrawCall![3]).toBe(112) // height (512 - 400)
   })
 
   it('draws grass detail line on ground', async () => {
@@ -154,8 +154,8 @@ describe('Background and Visual Effects (US-012)', () => {
     const firstCall = mockFillRect.mock.calls[0]
     expect(firstCall[0]).toBe(0)
     expect(firstCall[1]).toBe(0)
-    expect(firstCall[2]).toBe(400) // full width
-    expect(firstCall[3]).toBe(600) // full height
+    expect(firstCall[2]).toBe(288) // full width
+    expect(firstCall[3]).toBe(512) // full height
   })
 
   it('animates clouds moving across screen', async () => {
