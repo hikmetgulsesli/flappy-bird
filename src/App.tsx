@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import './index.css'
 import { MenuScreen, GameOverScreen } from './components'
 
@@ -305,6 +305,15 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [jump])
 
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+    jump()
+  }, [jump])
+
+  const handleTouchDefault = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault()
+  }, [])
+
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="text-center">
@@ -315,10 +324,9 @@ function App() {
             width={GAME_WIDTH}
             height={GAME_HEIGHT}
             onClick={jump}
-            onTouchStart={(e) => {
-              e.preventDefault()
-              jump()
-            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchDefault}
+            onTouchEnd={handleTouchDefault}
             className="border-4 border-gray-700 rounded-lg cursor-pointer touch-none image-pixelated"
             data-testid="game-canvas"
           />
