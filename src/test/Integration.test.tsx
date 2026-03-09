@@ -373,7 +373,7 @@ describe('Integration Wiring and End-to-End Verification (US-013)', () => {
     it('GameOverScreen restart button is accessible', () => {
       // Import and render GameOverScreen directly to verify accessibility
       const { getByTestId, getByText } = render(
-        <GameOverScreen score={10} highScore={20} onRestart={() => {}} />
+        <GameOverScreen score={10} highScore={20} onRestart={() => {}} isVisible={true} />
       )
       // Verify overlay is rendered and clickable
       expect(getByTestId('game-over-overlay')).toBeTruthy()
@@ -497,7 +497,7 @@ describe('Integration Wiring and End-to-End Verification (US-013)', () => {
     it('has all required props for GameOverScreen', () => {
       // Verify GameOverScreen accepts all required props correctly
       const { getByTestId, getByText } = render(
-        <GameOverScreen score={15} highScore={25} onRestart={() => {}} />
+        <GameOverScreen score={15} highScore={25} onRestart={() => {}} isVisible={true} />
       )
       // Verify component renders with all props
       expect(getByTestId('game-over-overlay')).toBeTruthy()

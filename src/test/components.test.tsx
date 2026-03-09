@@ -41,67 +41,47 @@ describe('StartScreen Component', () => {
 
 describe('GameOverScreen Component', () => {
   it('renders game over title', () => {
-    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} />)
-    
+    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} isVisible={true} />)
+
     expect(screen.getByText('GAME OVER')).toBeTruthy()
   })
 
-  it('renders new high score title when score equals high score', () => {
-    render(<GameOverScreen score={20} highScore={20} onRestart={vi.fn()} />)
-    
-    expect(screen.getByText('NEW HIGH SCORE!')).toBeTruthy()
-  })
-
   it('displays current score', () => {
-    render(<GameOverScreen score={15} highScore={20} onRestart={vi.fn()} />)
-    
-    expect(screen.getByText('15')).toBeTruthy()
+    render(<GameOverScreen score={15} highScore={20} onRestart={vi.fn()} isVisible={true} />)
+
+    expect(screen.getByText('Score: 15')).toBeTruthy()
   })
 
   it('displays high score', () => {
-    render(<GameOverScreen score={15} highScore={25} onRestart={vi.fn()} />)
-    
-    expect(screen.getByText('25')).toBeTruthy()
-  })
+    render(<GameOverScreen score={15} highScore={25} onRestart={vi.fn()} isVisible={true} />)
 
-  it('displays score label', () => {
-    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} />)
-    
-    expect(screen.getByText('Score')).toBeTruthy()
-  })
-
-  it('displays high score label', () => {
-    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} />)
-    
-    expect(screen.getByText('High Score')).toBeTruthy()
+    expect(screen.getByText('Best: 25')).toBeTruthy()
   })
 
   it('calls onRestart when clicked', () => {
     const onRestart = vi.fn()
-    render(<GameOverScreen score={10} highScore={20} onRestart={onRestart} />)
-    
+    render(<GameOverScreen score={10} highScore={20} onRestart={onRestart} isVisible={true} />)
+
     fireEvent.click(screen.getByTestId('game-over-overlay'))
-    
+
     expect(onRestart).toHaveBeenCalled()
   })
 
   it('renders restart instruction', () => {
-    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} />)
-    
-    expect(screen.getByText('Click to restart')).toBeTruthy()
+    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} isVisible={true} />)
+
+    expect(screen.getByText('Tap to Restart')).toBeTruthy()
   })
 
   it('has correct test id', () => {
-    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} />)
-    
+    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} isVisible={true} />)
+
     expect(screen.getByTestId('game-over-overlay')).toBeTruthy()
   })
 
-  it('shows score of 0 correctly', () => {
-    render(<GameOverScreen score={0} highScore={10} onRestart={vi.fn()} />)
-    
-    // Should not show "NEW HIGH SCORE!" when score is 0
-    expect(screen.queryByText('NEW HIGH SCORE!')).toBeNull()
-    expect(screen.getByText('GAME OVER')).toBeTruthy()
+  it('is not visible when isVisible is false', () => {
+    render(<GameOverScreen score={10} highScore={20} onRestart={vi.fn()} isVisible={false} />)
+
+    expect(screen.queryByTestId('game-over-overlay')).toBeNull()
   })
 })

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import '../../stitch/design-tokens.css'
 
 // Test design tokens and color palette
 
